@@ -18,6 +18,9 @@
 
 #include <debug.h>
 
+/* Maximum typematic delay supported, in milliseconds */
+#define KEYBOARD_TYPEMATIC_DELAY_MAXIMUM 1000
+
 /* GLOBALS *******************************************************************/
 
 static IO_WORKITEM_ROUTINE i8042PowerWorkItem;
@@ -282,6 +285,10 @@ HandlePowerKeys(
 	PKEYBOARD_INPUT_DATA InputData;
 	ULONG KeyPress;
 
+	/* The DPC is also queued for packet completions, when the buffer is empty */
+	if (DeviceExtension->KeysInBuffer == 0)
+		return FALSE;
+
 	InputData = DeviceExtension->KeyboardBuffer + DeviceExtension->KeysInBuffer - 1;
 	if (!(InputData->Flags & KEY_E0))
 		return FALSE;
@@ -501,9 +508,9 @@ i8042InitializeKeyboardAttributes(
     KeyboardAttributes->KeyRepeatMinimum.UnitId = 0;
     KeyboardAttributes->KeyRepeatMinimum.Rate = (USHORT)Settings->SampleRate;
     KeyboardAttributes->KeyRepeatMinimum.Delay = 0;
-    KeyboardAttributes->KeyRepeatMinimum.UnitId = 0;
-    KeyboardAttributes->KeyRepeatMinimum.Rate = (USHORT)Settings->SampleRate;
-    KeyboardAttributes->KeyRepeatMinimum.Delay = 0;
+    KeyboardAttributes->KeyRepeatMaximum.UnitId = 0;
+    KeyboardAttributes->KeyRepeatMaximum.Rate = (USHORT)Settings->SampleRate;
+    KeyboardAttributes->KeyRepeatMaximum.Delay = KEYBOARD_TYPEMATIC_DELAY_MAXIMUM;
 }
 
 /*
@@ -913,6 +920,13 @@ i8042KbdInterruptService(
 	}
 
 	/* Update InputData */
+	if (DeviceExtension->KeysInBuffer >= PortDeviceExtension->Settings.KeyboardDataQueueSize)
+	{
+		/* No room for this scan code, drop it instead of overflowing the buffer */
+		WARN_(I8042PRT, "Keyboard buffer full, dropping scan code 0x%02x\n", Output);
+		DeviceExtension->KeyboardScanState = Normal;
+		return TRUE;
+	}
 	InputData->Flags = 0;
 	switch (DeviceExtension->KeyboardScanState)
 	{
