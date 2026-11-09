@@ -1,0 +1,510 @@
+(/ntoskrnl/kd64/kdinit.c:94) -----------------------------------------------------
+(/ntoskrnl/kd64/kdinit.c:95) ReactOS 0.4.17-x86-dev (Build 20261109-unknown-revision) (Commit unknown-hash)
+(/ntoskrnl/kd64/kdinit.c:96) 1 System Processor [1024 MB Memory]
+(/ntoskrnl/kd64/kdinit.c:100) Command Line: DEBUG DEBUGPORT=COM1 BAUDRATE=115200 SOS FASTDETECT MININT
+(/ntoskrnl/kd64/kdinit.c:103) ARC Paths: multi(0)disk(0)cdrom(96) \ multi(0)disk(0)cdrom(96) \reactos\
+(/ntoskrnl/ke/i386/cpu.c:356) Supported CPU features: KF_RDTSC KF_CR4 KF_CMOV KF_GLOBAL_PAGE KF_LARGE_PAGE KF_CMPXCHG8B KF_MMX KF_WORKING_PTE KF_PAT KF_FXSR KF_FAST_SYSCALL KF_XMMI KF_XMMI64 X86_FEATURE_PAE X86_FEATURE_APIC
+(/ntoskrnl/ke/i386/cpu.c:438) Prefetch Cache: 32 bytes	L2 Cache: 0 bytes	L2 Cache Line: 64 bytes	L2 Cache Associativity: 0
+(/ntoskrnl/mm/ARM3/mminit.c:1444) HAL I/O Mapping at FFFE0000 is unsafe
+(/hal/halx86/generic/x86bios.c:145) *x86BiosMemoryMapping: F000FF53, F000E2C3
+(/ntoskrnl/mm/mminit.c:138)           0x80000000 - 0x83800000	Boot Loaded Image
+(/ntoskrnl/mm/mminit.c:144)           0x83800000 - 0xB0000000	System PTE Space
+(/ntoskrnl/mm/mminit.c:149)           0xB0000000 - 0xB0901000	PFN Database
+(/ntoskrnl/mm/mminit.c:153)           0xB0901000 - 0xB2879000	ARM3 Non Paged Pool
+(/ntoskrnl/mm/mminit.c:157)           0xB9400000 - 0xBB400000	System View Space
+(/ntoskrnl/mm/mminit.c:161)           0xBB400000 - 0xC0000000	Session Space
+(/ntoskrnl/mm/mminit.c:164)           0xC0000000 - 0xC03FFFFF	Page Tables
+(/ntoskrnl/mm/mminit.c:167)           0xC0300000 - 0xC0300FFF	Page Directories
+(/ntoskrnl/mm/mminit.c:170)           0xC0400000 - 0xC07FFFFF	Hyperspace
+(/ntoskrnl/mm/mminit.c:173)           0xC1000000 - 0xE0FFFFFF	System Cache
+(/ntoskrnl/mm/mminit.c:177)           0xE1000000 - 0xF5000000	ARM3 Paged Pool
+(/ntoskrnl/mm/mminit.c:187)           0xF7BE0000 - 0xFFBE0000	Non Paged Pool Expansion PTE Space
+(/ntoskrnl/ex/time.c:55) RtlQueryTimeZoneInformation failed (Status 0xc0000034)
+(/ntoskrnl/ex/time.c:331) ExpGetTimeZoneId failed
+(/hal/halx86/legacy/bussupp.c:629) UNIMPLEMENTED: Found parent bus (indicating PCI bridge). PCI devices may fail!
+
+====== PCI BUS HARDWARE DETECTION =======
+
+00:00.0 Host bridge [0600]: Intel Corporation 440FX - 82441FX PMC [Natoma] [8086:1237] (rev 02)
+	Subsystem: Qemu virtual machine [1af4:1100]
+	Flags: fast devsel, latency 0
+	Device has Extended Address Decoding. It may fail to work on older BIOSes!
+
+00:01.0 ISA bridge [0601]: Intel Corporation 82371SB PIIX3 ISA [Natoma/Triton II] [8086:7000] (rev 00)
+	Subsystem: Qemu virtual machine [1af4:1100]
+	Flags: medium devsel, latency 0
+
+00:01.1 IDE interface [0101]: Intel Corporation 82371SB PIIX3 IDE [Natoma/Triton II] [8086:7010] (rev 00)
+	Subsystem: Qemu virtual machine [1af4:1100]
+	Flags: medium devsel, latency 0
+	I/O ports at c020 [size=16]
+
+00:01.2 USB controller [0c03]: Intel Corporation 82371SB PIIX3 USB [Natoma/Triton II] [8086:7020] (rev 01)
+	Subsystem: QEMU Virtual Machine [1af4:1100]
+	Flags: bus master, fast devsel, latency 0, IRQ 11
+	I/O ports at c000 [size=32]
+	Device is using IRQ 11! ISA Cards using that IRQ may fail!
+
+00:01.3 Bridge [0680]: Intel Corporation 82371AB/EB/MB PIIX4 ACPI [8086:7113] (rev 03)
+	Subsystem: Qemu virtual machine [1af4:1100]
+	Flags: medium devsel, latency 0, IRQ 09
+	Device is using IRQ 9! ISA Cards using that IRQ may fail!
+
+00:02.0 VGA compatible controller [0300]:  Unknown device [1234:1111] (rev 02)
+	Subsystem: Unknown [1af4:1100]
+	Flags: fast devsel, latency 0
+	Memory at fd000000 (32-bit, prefetchable) [size=16M]
+	Memory at febf0000 (32-bit, non-prefetchable) [size=4K]
+
+====== PCI BUS DETECTION COMPLETE =======
+
+PC Compatible Eisa/Isa HAL detected
+(/ntoskrnl/kse/ksedb.c:124) KSE: Loaded driver database version 2.1 (898 bytes)
+(/ntoskrnl/kse/kse.c:547) KSE: Registered shim DriverScope
+(/ntoskrnl/kse/driverscope.c:359) KSE: driver scope shim registered.
+(/ntoskrnl/kse/kse.c:461) KseInitialize(BootPhase 0) => 00000000
+(/ntoskrnl/kse/kse.c:547) KSE: Registered shim IgnoreFreePoolTag
+(/ntoskrnl/kse/kse.c:547) KSE: Registered shim KmWin2k3VersionLie
+(/ntoskrnl/kse/kse.c:461) KseInitialize(BootPhase 1) => 00000000
+(/ntoskrnl/io/iomgr/driver.c:658) '\Driver\sacdrv' initialization failed, status (0xc0000037)
+(/ntoskrnl/io/iomgr/driver.c:83) Deleting driver object '\Driver\sacdrv'
+(/ntoskrnl/io/iomgr/driver.c:926) Driver 'sacdrv.sys' load failed, status (c0000365)
+WDFTrace: new WDFKEY object open of \Registry\Machine\System\CurrentControlSet\Control\usbflags failed, 0xc0000034
+(/hal/halx86/legacy/bus/bushndlr.c:141) STUB Adjustment(Bus 0:ffffffff.0)
+(/ntoskrnl/io/pnpmgr/devaction.c:656) Failed to open class key "{4D36E96A-E325-11CE-BFC1-08002BE10318}" (status c0000034)
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0xb 0xb vs. 0xb 0xb)
+(/hal/halx86/legacy/bus/pcibus.c:787) HAL: No PCI Resource Adjustment done! Hardware may malfunction
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0xb 0xb vs. 0xb 0xb)
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B1F7FBE0, FdoDevice - B1F80030, PipeHandle - B1F7FBE8
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B1F7FBE0, FdoDevice - B1F80030, PipeHandle - B28258C8
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B1F85F18, FdoDevice - B1F80030, PipeHandle - B1F85F20
+(/drivers/usb/usbport/endpoint.c:1225) USBPORT_ReopenPipe ... 
+(/drivers/usb/usbhub/usbhub.c:4542) USBH_RegQueryDeviceIgnoreHWSerNumFlag UNIMPLEMENTED. FIXME
+(/drivers/usb/usbhub/pnp.c:1299) USBH_FdoQueryBusRelations: FIXME USBH_DeviceIs2xDualMode()
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B1F7AE28, FdoDevice - B1F80030, PipeHandle - B1F7AE30
+(/drivers/usb/usbport/endpoint.c:1225) USBPORT_ReopenPipe ... 
+(/drivers/usb/usbhub/usbhub.c:4542) USBH_RegQueryDeviceIgnoreHWSerNumFlag UNIMPLEMENTED. FIXME
+(/drivers/usb/usbhub/pnp.c:1299) USBH_FdoQueryBusRelations: FIXME USBH_DeviceIs2xDualMode()
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbport/iface.c:636) USBHI_SetDeviceHandleData: UNIMPLEMENTED. FIXME.
+(/drivers/usb/usbhub/pnp.c:2182) USBH_PdoStartDevice: call IoWMIRegistrationControl UNIMPLEMENTED. FIXME
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B1F7AE28, FdoDevice - B1F80030, PipeHandle - B1F7B6C0
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B1F7A640, FdoDevice - B1F80030, PipeHandle - B1F7A648
+(/drivers/usb/usbport/endpoint.c:1225) USBPORT_ReopenPipe ... 
+(/drivers/usb/usbhub/usbhub.c:4542) USBH_RegQueryDeviceIgnoreHWSerNumFlag UNIMPLEMENTED. FIXME
+(/drivers/usb/usbhub/pnp.c:1299) USBH_FdoQueryBusRelations: FIXME USBH_DeviceIs2xDualMode()
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F87890, CompleteStatus - C00000BB
+WDFTrace: new WDFKEY object open of \Registry\Machine\System\CurrentControlSet\Services\USBHUB\hubg failed, 0xc0000034
+WDFTrace: new WDFKEY object open of \Registry\Machine\System\CurrentControlSet\Control\usb\Usb20HardwareLpm failed, 0xc0000034
+WDFTrace: new WDFKEY object open of \Registry\Machine\System\CurrentControlSet\Control\usb\UsbLtm failed, 0xc0000034
+(/ntoskrnl/io/iomgr/driver.c:658) '\Driver\BusLogic' initialization failed, status (0xc00000c0)
+(/ntoskrnl/io/iomgr/driver.c:83) Deleting driver object '\Driver\BusLogic'
+(/ntoskrnl/mm/ARM3/sysldr.c:591) multi(0)disk(0)cdrom(96)\reactos\system32\drivers\scsiport.sys <scsiport.sys>
+(/ntoskrnl/io/iomgr/driver.c:926) Driver 'buslogic.sys' load failed, status (c0000365)
+(/ntoskrnl/io/iomgr/driver.c:658) '\Driver\legide' initialization failed, status (0xc0000225)
+(/ntoskrnl/io/iomgr/driver.c:83) Deleting driver object '\Driver\legide'
+(/ntoskrnl/mm/ARM3/sysldr.c:591) multi(0)disk(0)cdrom(96)\reactos\system32\drivers\pciidex.sys <pciidex.sys>
+(/ntoskrnl/io/iomgr/driver.c:926) Driver 'legide.sys' load failed, status (c0000365)
+WDFTrace: new WDFKEY object open of \Registry\Machine\System\CurrentControlSet\Control\MiniNT failed, 0xc0000034
+(/ntoskrnl/io/pnpmgr/devaction.c:656) Failed to open class key "{4D36E96A-E325-11CE-BFC1-08002BE10318}" (status c0000034)
+(/hal/halx86/legacy/bus/pcibus.c:787) HAL: No PCI Resource Adjustment done! Hardware may malfunction
+(/ntoskrnl/io/pnpmgr/devaction.c:656) Failed to open class key "{4D36E96A-E325-11CE-BFC1-08002BE10318}" (status c0000034)
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0xe 0xe vs. 0xe 0xe)
+(/hal/halx86/legacy/bus/bushndlr.c:141) STUB Adjustment(Bus 1:ffffffff.0)
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0xe 0xe vs. 0xe 0xe)
+(/ntoskrnl/io/pnpmgr/devaction.c:656) Failed to open class key "{4D36E96A-E325-11CE-BFC1-08002BE10318}" (status c0000034)
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0xf 0xf vs. 0xf 0xf)
+(/hal/halx86/legacy/bus/bushndlr.c:141) STUB Adjustment(Bus 1:ffffffff.0)
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0xf 0xf vs. 0xf 0xf)
+WDFTrace: WDFKEY 4E0A8960, QueryULong, 0xc0000034
+WARNING:  PoRegisterDeviceForIdleDetection at /ntoskrnl/po/power.c:638 is UNIMPLEMENTED!
+WDFTrace: new WDFKEY object open of Classpnp failed, 0xc0000034
+WDFTrace: new WDFKEY object open of Classpnp failed, 0xc0000034
+WDFTrace: new WDFKEY object open of Classpnp failed, 0xc0000034
+WDFTrace: new WDFKEY object open of Parameters failed, 0xc0000034
+WDFTrace: WDFKEY 4E084C20, QueryULong, 0xc0000034
+WDFTrace: new WDFKEY object open of MediaChangeNotification failed, 0xc0000034
+WDFTrace: new WDFKEY object open of Classpnp failed, 0xc0000034
+WDFTrace: new WDFKEY object open of Classpnp failed, 0xc0000034
+(/ntoskrnl/po/power.c:1036) PowerInformationLevel 0x42 is UNIMPLEMENTED! Have a nice day.
+WDFTrace: new WDFKEY object open of CdRom failed, 0xc0000034
+WDFTrace: new WDFKEY object open of CdRom failed, 0xc0000034
+WDFTrace: new WDFKEY object open of CdRom failed, 0xc0000034
+WDFTrace: WDFKEY 4E084C20, QueryULong, 0xc0000034
+(/drivers/ksfilter/swenum/swenum.c:428) SWENUM loaded
+BOOT DRIVERS LOADED
+WARNING:  HalCalculateScatterGatherListSize at /hal/halx86/generic/dma.c:1189 is UNIMPLEMENTED!
+(/ntoskrnl/io/iomgr/iomgr.c:512) Polling up to 30000 ms for the boot device
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\i8042prt.sys at AFF98000 with 1d pages
+(/drivers/input/i8042prt/hwhacks.c:278) SMBiosTables HACK, see CORE-14867
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\kbdclass.sys at AF3B2000 with 16 pages
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0x1 0x1 vs. 0x1 0x1)
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\mouclass.sys at AFF88000 with 10 pages
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0xc 0xc vs. 0xc 0xc)
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\hidusb.sys at AF3A5000 with d pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\hidclass.sys at AF391000 with 14 pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\hidparse.sys at AF37E000 with 13 pages
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F44888, CompleteStatus - C00000BB
+(/drivers/usb/usbport/iface.c:636) USBHI_SetDeviceHandleData: UNIMPLEMENTED. FIXME.
+(/drivers/usb/usbhub/pnp.c:2182) USBH_PdoStartDevice: call IoWMIRegistrationControl UNIMPLEMENTED. FIXME
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B1F85F18, FdoDevice - B1F80030, PipeHandle - B1F42818
+(/drivers/hid/hidusb/hidusb.c:1418) Status 0
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\kbdhid.sys at AF372000 with c pages
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1F144A8, CompleteStatus - C00000BB
+(/drivers/usb/usbport/iface.c:636) USBHI_SetDeviceHandleData: UNIMPLEMENTED. FIXME.
+(/drivers/usb/usbhub/pnp.c:2182) USBH_PdoStartDevice: call IoWMIRegistrationControl UNIMPLEMENTED. FIXME
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B1F7A640, FdoDevice - B1F80030, PipeHandle - B1F17560
+(/drivers/hid/hidusb/hidusb.c:1418) Status 0
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\mouhid.sys at AF366000 with c pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\bochsmp.sys at AF35B000 with b pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\videoprt.sys at AF32A000 with 31 pages
+(/win32ss/drivers/videoprt/videoprt.c:828) Using x86 emulator
+(/win32ss/drivers/videoprt/int10.c:781) Could not initialize the x86 emulator; falling back to V86 mode
+(/win32ss/drivers/videoprt/registry.c:316) Failed to open device software key, status 0xc0000034
+(/hal/halx86/legacy/bus/pcibus.c:787) HAL: No PCI Resource Adjustment done! Hardware may malfunction
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\floppy.sys at AF310000 with 1a pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\fs_rec.sys at AF2FD000 with f pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\null.sys at AF2F4000 with 9 pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\beep.sys at AF2EB000 with 9 pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\blue.sys at AF2DC000 with f pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\vgapnp.sys at AF2CF000 with d pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\vga.sys at AF2C4000 with b pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\msfs.sys at AF2B9000 with b pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\npfs.sys at AF292000 with 27 pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\ndisuio.sys at AF282000 with 10 pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\afd.sys at AF24D000 with 35 pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\system32\drivers\netio.sys at AF238000 with 15 pages
+KDB: Executing KDBinit file...
+KDB: KDBinit executed
+(/ntoskrnl/io/iomgr/driver.c:83) Deleting driver object '\Driver\KdDriver'
+WARNING:  RtlCreateTagHeap at /sdk/lib/rtl/heap.c:4043 is UNIMPLEMENTED!
+Boot took 31933165351 cycles!
+Interrupts: 1490 System Calls: 18083 Context Switches: 1651
+(/ntoskrnl/config/cmsysini.c:1207) CmpGetRegistryPath: ConfigPath = '\SystemRoot\System32\Config\'
+(/ntoskrnl/config/cmsysini.c:1207) CmpGetRegistryPath: ConfigPath = '\SystemRoot\System32\Config\'
+(/ntoskrnl/config/cmsysini.c:1207) CmpGetRegistryPath: ConfigPath = '\SystemRoot\System32\Config\'
+(/ntoskrnl/config/cmsysini.c:1207) CmpGetRegistryPath: ConfigPath = '\SystemRoot\System32\Config\'
+(/ntoskrnl/config/cmsysini.c:1207) CmpGetRegistryPath: ConfigPath = '\SystemRoot\System32\Config\'
+(/ntoskrnl/config/cmsysini.c:1207) CmpGetRegistryPath: ConfigPath = '\SystemRoot\System32\Config\'
+(/ntoskrnl/config/cmsysini.c:1207) CmpGetRegistryPath: ConfigPath = '\SystemRoot\System32\Config\'
+(/base/system/smss/sminit.c:873) SMSS: Cannot query SystemPartition value (Type 0, Status 0xc0000034)
+(/ntoskrnl/mm/ARM3/session.c:795) Session 0 is ready to go: 0xBF7F0000 0xAF8B3000, 256d 0xB1E1DE00
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\win32k.sys at AEEA9000 with 36b pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\ftfd.dll at AED36000 with 173 pages
+(/win32ss/gdi/ntgdi/d3dkmt.c:27) DxStartupDxgkInt: Entry
+(/win32ss/reactx/ntddraw/ddraw.c:57) Warning: trying loading xp/2003/windows7/reactos dxg.sys
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\drivers\dxg.sys at AED15000 with 11 pages
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\drivers\dxgthk.sys at AED0E000 with 7 pages
+(/win32ss/reactx/ntddraw/ddraw.c:112) DirectX interface is activated
+(/win32ss/gdi/ntgdi/freetype.c:970) Fonts registry is empty.
+Bochs: detected version 0xb0c5
+(/win32ss/gdi/eng/device.c:581) err: EngpPnPTargetRelationRequest() failed with status 0xc0000010
+(/win32ss/user/ntuser/winsta.c:255) err: Invalid window station handle
+(/win32ss/user/ntuser/clipboard.c:31) err: Cannot open winsta
+err:(/base/system/winlogon/winlogon.c:168) WL: RegOpenKeyExW("HKLM\System\CurrentControlSet\Services\Tcpip\Parameters") failed (error 2)
+(/win32ss/user/ntuser/winsta.c:741) err: Initializing input window station
+(/win32ss/user/ntuser/winsta.c:785) err: Initializing input window station
+(/win32ss/user/ntuser/class.c:2396) err: SYSTEMCUR(ARROW) == NULL, should not happen!!
+(/win32ss/user/ntuser/class.c:2396) err: SYSTEMCUR(ARROW) == NULL, should not happen!!
+(/win32ss/user/ntuser/class.c:2396) err: SYSTEMCUR(ARROW) == NULL, should not happen!!
+(/win32ss/user/ntuser/class.c:2396) err: SYSTEMCUR(ARROW) == NULL, should not happen!!
+(/win32ss/user/ntuser/class.c:2396) err: SYSTEMCUR(ARROW) == NULL, should not happen!!
+(/win32ss/user/ntuser/class.c:2396) err: SYSTEMCUR(ARROW) == NULL, should not happen!!
+(/win32ss/user/ntuser/desktop.c:3502) err: The process 0xB1AE6698 'winlogon.exe' didn't have an assigned startup desktop before, assigning it now!
+(/win32ss/user/ntuser/desktop.c:3440) err: Attempted to change thread desktop although the thread has windows!
+(/win32ss/user/winsrv/usersrv/init.c:171) We are logged off
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\kbdus.dll at AECD9000 with 5 pages
+(/ntoskrnl/mm/ARM3/sysldr.c:2559) Skipping NT 4 driver @ AECD9000
+(/ntoskrnl/kdbg/kdb_symbols.c:231) Trying \SystemRoot\System32\kbdus.dll
+(/base/system/services/services.c:64) CheckSetup()
+(/base/system/services/services.c:108) Running on LiveCD
+(/base/system/services/services.c:130) ReactOS Setup currently in progress!
+WARNING:  HvHiveWillShrink at /sdk/lib/cmlib/hivewrt.c:576 is UNIMPLEMENTED!
+fixme:(/dll/win32/rpcrt4/rpc_server.c:1736) (0x1000): stub
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 1722
+WARNING:  getMacAddress at /base/services/dcomlaunch/network.c:32 is UNIMPLEMENTED!
+(/base/services/dcomlaunch/network.c:136) Failed finding a proper MAC address, will generate seed
+(/base/services/eventlog/file.c:350) Cannot create file `\??\X:\reactos\system32\config\AppEvent.Evt' (Status 0xc0000022)
+(/base/services/eventlog/eventlog.c:420) Failed to create X:\reactos\system32\config\AppEvent.Evt! (Status c0000022)
+(/base/services/eventlog/eventlog.c:483) Failed to load Application
+(/base/services/eventlog/file.c:350) Cannot create file `\??\X:\reactos\system32\config\SecEvent.Evt' (Status 0xc0000022)
+(/base/services/eventlog/eventlog.c:420) Failed to create X:\reactos\system32\config\SecEvent.Evt! (Status c0000022)
+(/base/services/eventlog/eventlog.c:483) Failed to load Security
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 1722
+(/base/services/eventlog/file.c:350) Cannot create file `\??\X:\reactos\system32\config\SysEvent.Evt' (Status 0xc0000022)
+(/base/services/eventlog/eventlog.c:420) Failed to create X:\reactos\system32\config\SysEvent.Evt! (Status c0000022)
+(/base/services/eventlog/eventlog.c:483) Failed to load System
+(/base/services/eventlog/eventlog.c:534) The 'EventLog' source is unavailable. The EventLog service will not be able to log its own events.
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 1722
+(/win32ss/gdi/eng/mouse.c:811) Failed to lock the DC.
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 1722
+fixme:(/dll/win32/rpcrt4/rpc_server.c:1736) (0x1000): stub
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+Boot took 36030389100 cycles!
+Interrupts: 3204 System Calls: 37438 Context Switches: 5848
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\framebuf.dll at AEB78000 with c pages
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+WARNING:  LDEVOBJ_bUnloadImage at /win32ss/gdi/eng/ldevobj.c:290 is UNIMPLEMENTED!
+(/win32ss/reactx/ntddraw/dxeng.c:286) ReactX Calling : DxEngGetHdevData, Type: 12
+(/win32ss/reactx/ntddraw/dxeng.c:289) hDev: E1280728
+(/win32ss/reactx/ntddraw/dxeng.c:343) requested DxEGShDevData_display
+(/win32ss/reactx/ntddraw/dxeng.c:376) retVal: 00000001
+(/win32ss/reactx/ntddraw/dxeng.c:286) ReactX Calling : DxEngGetHdevData, Type: 7
+(/win32ss/reactx/ntddraw/dxeng.c:289) hDev: E1280728
+(/win32ss/reactx/ntddraw/dxeng.c:323) requested DxEGShDevData_eddg
+(/win32ss/reactx/ntddraw/dxeng.c:376) retVal: e1281008
+(/win32ss/reactx/ntddraw/dxeng.c:286) ReactX Calling : DxEngGetHdevData, Type: 6
+(/win32ss/reactx/ntddraw/dxeng.c:289) hDev: E1280728
+(/win32ss/reactx/ntddraw/dxeng.c:319) requested DxEGShDevData_dhpdev
+(/win32ss/reactx/ntddraw/dxeng.c:376) retVal: e12805c0
+(/win32ss/reactx/ntddraw/dxeng.c:534) ReactX Calling : DxEngLockHdev
+(/win32ss/reactx/ntddraw/dxeng.c:536) hDev: E1280728
+(/win32ss/reactx/ntddraw/dxeng.c:286) ReactX Calling : DxEngGetHdevData, Type: 5
+(/win32ss/reactx/ntddraw/dxeng.c:289) hDev: E1280728
+(/win32ss/reactx/ntddraw/dxeng.c:315) requested DxEGShDevData_DrvFuncs
+(/win32ss/reactx/ntddraw/dxeng.c:376) retVal: e1280a14
+(/win32ss/reactx/ntddraw/dxeng.c:571) ReactX Calling : DxEngUnlockHdev
+err:(/win32ss/user/user32/windows/cursoricon.c:274) Loading System Cursors
+err:(/dll/win32/lsasrv/lsarpc.c:1452) LsapOpenDbObject(Accounts/S-1-5-6) failed (Status 0xc0000034)
+err:(/base/services/schedsvc/rpcserver.c:62) RpcServerListen() failed (Status 6b1)
+err:(/win32ss/user/user32/misc/dllmain.c:607) hIconSmWindows 00020076 hIconWindows 00020074 
+(/win32ss/user/ntuser/callback.c:1149) err: hIconSmWindows 00020076 hIconWindows 00020074 
+(/win32ss/user/ntuser/desktop.c:3440) err: Attempted to change thread desktop although the thread has windows!
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+err:(/base/services/wkssvc/wkssvc.c:82) ServiceInit()
+fixme:(/win32ss/printing/providers/localspl/monitors.c:265) InitializePrintMonitor2 loaded.
+fixme:(/win32ss/printing/providers/localspl/monitors.c:304) InitializePrintMonitorList Handle 00234E78
+fixme:(/base/services/browser/browser.c:144) ServiceMain(1 00234DE0)
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+err:(/base/services/wkssvc/rpcserver.c:61) RpcServerListen() failed (Status 6b1)
+err:(/win32ss/user/user32/windows/window.c:496) CreateWindowExW RegisterSystemControls
+fixme:(/win32ss/printing/providers/localspl/forms.c:234) InitializeFormList
+fixme:(/win32ss/printing/providers/localspl/printerdrivers.c:784) LocalGetPrinterDriverDirectory((null), Windows NT x86, 1, 00B3F024, 520, 00B3F020)
+fixme:(/win32ss/printing/providers/localspl/printerdrivers.c:828) => L"X:\\reactos\\System32\\spool\\drivers\\w32x86"
+fixme:(/win32ss/printing/providers/localspl/printerdrivers.c:110) DriverPath : X:\reactos\System32\spool\drivers\w32x86\3\UniDrv.dll
+(/win32ss/user/ntuser/desktop.c:1381) err: ptiLastInput is CLEARED!!
+(/win32ss/user/ntuser/msgqueue.c:842) err: Remove Window Messages E12CBBE0 From Sent Queue
+(/win32ss/user/ntuser/msgqueue.c:1272) err: NB Receiving Thread woken up dead!
+(/win32ss/user/ntuser/msgqueue.c:2269) err: Thread Cleanup Sent Messages E12CBBE0
+(/win32ss/user/ntuser/message.c:1462) err: UserPostMessage: Invalid handle 0x00020078 Msg 0x0!
+Boot took 36789918292 cycles!
+Interrupts: 3654 System Calls: 41905 Context Switches: 7082
+(/ntoskrnl/config/cmcontrl.c:269) CmpSaveBootControlSet(1)
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+err:(/base/services/browser/rpcserver.c:42) RpcServerListen() failed (Status 6b1)
+err:(/base/services/srvsvc/rpcserver.c:64) RpcServerListen() failed (Status 6b1)
+(/win32ss/user/ntuser/desktop.c:3440) err: Attempted to change thread desktop although the thread has windows!
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/wuauserv/wuauserv.c:44) WU UpdateServiceStatus(4) called
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/dll/win32/syssetup/wizard.c:1508) Applying visual theme '(Classic)'
+(/win32ss/user/ntuser/winpos.c:796) err: FIXME: Parent is Desktop, Min off screen!
+err:(/dll/win32/combase/combase.c:1796) class {56fdf344-fd6d-11d0-958a-006097c9a090} not registered
+err:(/dll/win32/combase/combase.c:1874) no class object {56fdf344-fd6d-11d0-958a-006097c9a090} could be created for context 0x1
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/umpnpmgr/install.c:118) Installing: DISPLAY\RHT1234\3&66c84fb7&1
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/umpnpmgr/install.c:118) Installing: HID\Vid_0627&Pid_0001\5&c769bb1f&0001
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device HID\Vid_0627&Pid_0001\5&c769bb1f&0001
+(/base/services/umpnpmgr/install.c:118) Installing: HID\Vid_0627&Pid_0001\6&f7170cc3&0001
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device HID\Vid_0627&Pid_0001\6&f7170cc3&0001
+(/base/services/umpnpmgr/install.c:118) Installing: HTREE\ROOT\0
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 2
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'HTREE\ROOT\0'
+(/base/services/umpnpmgr/install.c:118) Installing: IDE\CdRomQEMU_QEMU_DVD-ROM_______________________2.5+____\4&a5149338&1.0.0
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(23 0023DFB8 0024B8F4)
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(24 0023DFB8 0024B8F4)
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(28 0023DFB8 0024B8F4)
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(29 0023DFB8 0024B8F4)
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(21 0023DFB8 0024B8F4)
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(34 0023DFB8 0024B8F4)
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(32 0023DFB8 0024B8F4)
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(2 0023DFB8 0024B8F4)
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device IDE\CdRomQEMU_QEMU_DVD-ROM_______________________2.5+____\4&a5149338&1.0.0
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(30 0023DFB8 0024B8F4)
+(/dll/win32/storprop/dvd.c:87) DvdClassInstaller(12 0023DFB8 0024B8F4)
+(/base/services/umpnpmgr/install.c:118) Installing: ISAPNP\ReadDataPort\0
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device ISAPNP\ReadDataPort\0
+(/base/services/umpnpmgr/install.c:118) Installing: PCI\VEN_1234&DEV_1111&SUBSYS_11001AF4&REV_02\2&b3ac4ede&02
+(/win32ss/gdi/eng/device.c:695) err: Could not open device \Device\Video1, 0xc0000022
+(/base/services/umpnpmgr/install.c:118) Installing: PCI\VEN_8086&DEV_1237&SUBSYS_11001AF4&REV_02\2&b3ac4ede&00
+(/base/services/umpnpmgr/install.c:118) Installing: PCI\VEN_8086&DEV_7000&SUBSYS_11001AF4&REV_00\2&b3ac4ede&01
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device PCI\VEN_8086&DEV_7000&SUBSYS_11001AF4&REV_00\2&b3ac4ede&01
+(/base/services/umpnpmgr/install.c:118) Installing: PCI\VEN_8086&DEV_7010&SUBSYS_11001AF4&REV_00\2&b3ac4ede&21
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device PCI\VEN_8086&DEV_7010&SUBSYS_11001AF4&REV_00\2&b3ac4ede&21
+(/base/services/umpnpmgr/install.c:118) Installing: PCI\VEN_8086&DEV_7020&SUBSYS_11001AF4&REV_01\2&b3ac4ede&41
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device PCI\VEN_8086&DEV_7020&SUBSYS_11001AF4&REV_01\2&b3ac4ede&41
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'PCI\VEN_8086&DEV_7020&SUBSYS_11001AF4&REV_01\2&b3ac4ede&41'
+(/base/services/umpnpmgr/install.c:118) Installing: PCI\VEN_8086&DEV_7113&SUBSYS_11001AF4&REV_03\2&b3ac4ede&61
+(/base/services/umpnpmgr/install.c:118) Installing: PCIIDE\IDEChannel\3&51188e26&0
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device PCIIDE\IDEChannel\3&51188e26&0
+(/base/services/umpnpmgr/install.c:118) Installing: PCIIDE\IDEChannel\3&51188e26&1
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device PCIIDE\IDEChannel\3&51188e26&1
+(/base/services/umpnpmgr/install.c:118) Installing: PCI_HAL\PNP0A03\0
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device PCI_HAL\PNP0A03\0
+(/base/services/umpnpmgr/install.c:118) Installing: Root\*PNP030b\0000
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device Root\*PNP030b\0000
+(/base/services/umpnpmgr/install.c:118) Installing: Root\*PNP0400\0000
+fixme:(/dll/win32/msports/classinst.c:41) GetBootResourceList()
+err:(/dll/win32/msports/classinst.c:118) RegQueryValueExW() failed (Error 0)
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\drivers\parport.sys at AE8EE000 with b pages
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0x7 0x7 vs. 0x7 0x7)
+(/ntoskrnl/io/pnpmgr/devaction.c:235) IopInitiatePnpIrp(BusQueryDeviceID) failed (Status c00000bb)
+(/ntoskrnl/io/pnpmgr/devaction.c:1215) IopCreateDeviceInstancePath() failed with status 0xc00000bb
+(/base/services/umpnpmgr/install.c:118) Installing: Root\*PNP0501\0000
+fixme:(/dll/win32/msports/classinst.c:41) GetBootResourceList()
+err:(/dll/win32/msports/classinst.c:118) RegQueryValueExW() failed (Error 0)
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\drivers\serial.sys at AE8DB000 with 13 pages
+(/ntoskrnl/io/pnpmgr/pnpres.c:631) Resource conflict: Port (0x3f8 to 0x400 vs. 0x3f8 to 0x400)
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0x4 0x4 vs. 0x4 0x4)
+(/hal/halx86/legacy/bus/sysbus.c:131) Vector 34 is ALREADY IN USE!
+(/hal/halx86/legacy/bussupp.c:1519) Returning IRQL 17, Vector 0 for Level/Vector: 4/4
+(/hal/halx86/legacy/bussupp.c:1522) Old HAL would've returned IRQL 17 and Vector 34
+(/ntoskrnl/io/pnpmgr/pnpres.c:1057) Failed to translate interrupt resource (Vector: 0x4 | Level: 0x4)
+(/ntoskrnl/io/pnpmgr/pnpres.c:1189) Failed to translate resources for Root\*PNP0501\0000
+(/base/services/umpnpmgr/install.c:118) Installing: Root\*PNP0700\0000
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\drivers\fdc.sys at AE8CF000 with c pages
+(/ntoskrnl/io/pnpmgr/pnpres.c:648) Resource conflict: IRQ (0x6 0x6 vs. 0x6 0x6)
+(/ntoskrnl/io/pnpmgr/pnpres.c:631) Resource conflict: Port (0x3f0 to 0x3f8 vs. 0x3f6 to 0x3f7)
+(/base/services/umpnpmgr/install.c:118) Installing: Root\*PNP0F03\0000
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device Root\*PNP0F03\0000
+(/base/services/umpnpmgr/install.c:118) Installing: Root\PCI_HAL\0000
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device Root\PCI_HAL\0000
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'Root\PCI_HAL\0000'
+(/base/services/umpnpmgr/install.c:118) Installing: Root\VgaSave\0000
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 259
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'Root\VgaSave\0000'
+(/base/services/umpnpmgr/install.c:118) Installing: USB\ROOT_HUB\3&95870edc
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device USB\ROOT_HUB\3&95870edc
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'USB\ROOT_HUB\3&95870edc'
+(/base/services/umpnpmgr/install.c:118) Installing: USB\Vid_0409&Pid_55aa\4&8f1fa674&2
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device USB\Vid_0409&Pid_55aa\4&8f1fa674&2
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'USB\Vid_0409&Pid_55aa\4&8f1fa674&2'
+(/base/services/umpnpmgr/install.c:118) Installing: USB\Vid_0627&Pid_0001\4&8f1fa674&1
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device USB\Vid_0627&Pid_0001\4&8f1fa674&1
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'USB\Vid_0627&Pid_0001\4&8f1fa674&1'
+(/base/services/umpnpmgr/install.c:118) Installing: USB\Vid_0627&Pid_0001\5&c3e83e4b&1
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device USB\Vid_0627&Pid_0001\5&c3e83e4b&1
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'USB\Vid_0627&Pid_0001\5&c3e83e4b&1'
+(/base/services/umpnpmgr/install.c:118) Installing: FDC\GENERIC_FLOPPY_DRIVE\1&a6ab3a9&00
+(/win32ss/user/ntuser/desktop.c:1381) err: ptiLastInput is CLEARED!!
+(/win32ss/user/ntuser/msgqueue.c:2363) err: MQ Cleanup Post Messages E132B580
+(/ntoskrnl/mm/ARM3/sysldr.c:170) Loading: \SystemRoot\System32\drivers\tcpip.sys at AE852000 with 7d pages
+Unhandled event type: 6
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+fixme:(/dll/win32/rpcrt4/rpc_server.c:1736) (0x1000): stub
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/base/services/dhcpcsvc/dhcp/api.c:58) RpcServerListen() failed (Status 6b1)
+(/base/services/eventlog/rpc.c:101) EventLog service reports no log files!
+(/base/system/services/services.c:185) ScmLogEvent: RegisterEventSourceW failed 31
+(/dll/ntdll/rtl/libsupp.c:1140) ApiSetResolveToHost redirected api-ms-win-core-synch-l1-2-0 to X:\reactos\System32\kernel32.dll
+(/dll/ntdll/rtl/libsupp.c:1140) ApiSetResolveToHost redirected api-ms-win-core-fibers-l1-1-0 to X:\reactos\System32\kernel32.dll
+(/dll/ntdll/rtl/libsupp.c:1140) ApiSetResolveToHost redirected api-ms-win-core-localization-l1-2-1 to X:\reactos\System32\kernel32.dll
+err:(/dll/win32/combase/combase.c:1729) apartment not initialised
+err:(/dll/win32/combase/combase.c:1729) apartment not initialised
+WARNING:  MmFlushVirtualMemory at /ntoskrnl/mm/ARM3/virtual.c:1349 is UNIMPLEMENTED!
+fixme:(/dll/win32/wintrust/register.c:1227) stub
+(/win32ss/user/winsrv/usersrv/init.c:152) GetThreadConsoleDesktop(604) failed with Status 0xc0000008
+err:(/dll/win32/advpack/reg.c:55) Can't get temp ini file path
+err:(/dll/win32/mshtml/main.c:491) RegInstall failed: 80004005
+err:(/dll/shellext/mydocs/mydocs.cpp:46) CreateEmptyFile(X:\Users\Default\AppData\Roaming\Microsoft\Windows\SendTo\Documents.mydocs, X:\Users\Default\Documents) failed!
+err:(/dll/win32/combase/combase.c:1729) apartment not initialised
+err:(/dll/win32/combase/combase.c:1729) apartment not initialised
+err:(/dll/shellext/sendmail/sendmail.cpp:47) CreateEmptyFile('X:\Users\Default\AppData\Roaming\Microsoft\Windows\SendTo\Desktop (Create shortcut).DeskLink')
+fixme:(/dll/win32/shdocvw/shdocvw_main.c:222) (TRUE, (null)): stub!
+err:(/dll/win32/shell32/wine/shellpath.c:3999) Failed to create directory L"X:\\Users\\Default\\Documents".
+err:(/dll/win32/shell32/wine/shellpath.c:3999) Failed to create directory L"X:\\Users\\Default\\AppData\\Roaming\\Microsoft\\Windows\\Templates".
+(/dll/ntdll/rtl/libsupp.c:1140) ApiSetResolveToHost redirected api-ms-win-core-synch-l1-2-0 to X:\reactos\System32\kernel32.dll
+(/dll/ntdll/rtl/libsupp.c:1140) ApiSetResolveToHost redirected api-ms-win-core-fibers-l1-1-0 to X:\reactos\System32\kernel32.dll
+(/dll/ntdll/rtl/libsupp.c:1140) ApiSetResolveToHost redirected api-ms-win-core-localization-l1-2-1 to X:\reactos\System32\kernel32.dll
+err:(/dll/win32/advpack/reg.c:55) Can't get temp ini file path
+(/base/services/w32time/register.c:56) RegisterService()
+fixme:(/dll/win32/wininet/internet.c:352) (1 (null)): stub
+zipfldr.cpp:75: (/dll/shellext/zipfldr/zipfldr.cpp:75) CreateEmptyFile('X:\Users\Default\AppData\Roaming\Microsoft\Windows\SendTo\Compressed (zipped) Folder.ZFSendToTarget')
+(/win32ss/user/ntuser/msgqueue.c:2252) err: Thread Cleanup Post Messages E125A750
+err:(/win32ss/user/user32/windows/window.c:496) CreateWindowExW RegisterSystemControls
+(/win32ss/user/ntuser/class.c:1484) err: Class "6.0.2600.2982!Static" not found
+(/win32ss/user/ntuser/window.c:2209) err: Failed to find class 6.0.2600.2982!Static
+(/win32ss/user/ntuser/window.c:2799) err: co_UserCreateWindowEx failed!
+err:(/win32ss/user/user32/windows/class.c:208) VersionRegisterClass: Attempting to call RegisterClassNameW in comctl32.dll.
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B28592A0, FdoDevice - B1F80030, PipeHandle - B28592A8
+(/drivers/usb/usbport/endpoint.c:1225) USBPORT_ReopenPipe ... 
+(/drivers/usb/usbhub/usbhub.c:4542) USBH_RegQueryDeviceIgnoreHWSerNumFlag UNIMPLEMENTED. FIXME
+(/drivers/usb/usbhub/pnp.c:1299) USBH_FdoQueryBusRelations: FIXME USBH_DeviceIs2xDualMode()
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1A086F8, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1A086F8, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1A086F8, CompleteStatus - C00000BB
+(/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1A086F8, CompleteStatus - C00000BB
+(/drivers/usb/usbport/iface.c:636) USBHI_SetDeviceHandleData: UNIMPLEMENTED. FIXME.
+(/drivers/usb/usbhub/pnp.c:2182) USBH_PdoStartDevice: call IoWMIRegistrationControl UNIMPLEMENTED. FIXME
+(/base/services/umpnpmgr/install.c:118) Installing: USB\Vid_0627&Pid_0001\5&c3e83e4b&2
+(/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B28592A0, FdoDevice - B1F80030, PipeHandle - B17B74D8
+(/drivers/hid/hidusb/hidusb.c:1418) Status 0
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device USB\Vid_0627&Pid_0001\5&c3e83e4b&2
+err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+(/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'USB\Vid_0627&Pid_0001\5&c3e83e4b&2'
+(/base/services/umpnpmgr/install.c:118) Installing: HID\Vid_0627&Pid_0001\6&dc3a5f00&0001
+(/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device HID\Vid_0627&Pid_0001\6&dc3a5f00&0001

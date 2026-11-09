@@ -17,3 +17,20 @@ Driver binaries in the tree (built by feat-dev at 17:28-17:31 UTC):
   drivers/hid/mouhid/mouhid.sys         53248
 
 Build log (full tail): see harness/CI logs; rc=0, no compiler errors.
+
+=== 2026-11-09T21:14 local (18:14 UTC)  r2: rebuild after [KBDHID] usage-count fix (156d0ddc7cc)
+host: ai1 (/home/l/build/reactos-lab/0004-input-ps2-usb-hid), RosBE 2.2.1 / GCC 8.4, -j 8
+command: cd /home/l/projects/reactos-lab && scripts/remote-build.sh build 0004-input-ps2-usb-hid bootcd
+         (build implies sync: "transferred: 0, mtimes bumped" — tree was already at 156d0ddc7cc;
+          this sync also dropped the old 0001 test-vehicle patch from CMakeMacros.cmake)
+rc: 0
+ninja: [1/7]..[7/7] — host-tools install, liveimg.iso, bootcd.iso (mkisofs + isohybrid);
+       only ISO packaging steps, object files were up to date.
+
+ISO A (on ai1):
+  path:   /home/l/build/reactos-lab/0004-input-ps2-usb-hid/output-MinGW-i386/bootcd.iso
+  size:   373293056 bytes (356 MiB)
+  mtime:  2026-11-09 18:14:19 UTC
+  sha256: 22457bf612e1c62bbecaf15a6eafd0b109fb2c36d3722748261e4ca708ff6dc6
+
+Previous ISO A (first round, HEAD e13b2aeb): 10e9492793c4b44dd4b0daf423b01efe99d15539676264401628907ffbf86061
