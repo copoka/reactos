@@ -609,6 +609,28 @@ function(set_module_type MODULE TYPE)
     # Set our target property
     set_target_properties(${MODULE} PROPERTIES REACTOS_MODULE_TYPE ${TYPE})
 
+    # A module can consist of resources only, e.g. a DLL built from a version
+    # resource and a generated .def file with no compilable sources at all. For
+    # such targets CMake selects RC as the linker language, and the RC rule for
+    # shared modules has neither -shared nor the rsym post-build step, which
+    # yields an image without IMAGE_FILE_DLL. Force the C linker rule so that
+    # resource-only modules are linked exactly like regular ones.
+    get_target_property(_module_target_type ${MODULE} TYPE)
+    if(_module_target_type MATCHES "SHARED_LIBRARY|MODULE_LIBRARY")
+        get_target_property(_module_sources ${MODULE} SOURCES)
+        if(_module_sources)
+            set(_module_has_compilable_sources FALSE)
+            foreach(_module_source IN LISTS _module_sources)
+                if(_module_source MATCHES "\\.(c|cc|cpp|cxx|C|s|S|asm)$")
+                    set(_module_has_compilable_sources TRUE)
+                endif()
+            endforeach()
+            if(NOT _module_has_compilable_sources)
+                set_target_properties(${MODULE} PROPERTIES LINKER_LANGUAGE C)
+            endif()
+        endif()
+    endif()
+
     # Add the module to the module group list, if it is defined
     if(DEFINED CURRENT_MODULE_GROUP)
         set_property(GLOBAL APPEND PROPERTY ${CURRENT_MODULE_GROUP}_MODULE_LIST "${MODULE}")
