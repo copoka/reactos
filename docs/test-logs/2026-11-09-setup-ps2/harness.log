@@ -1,0 +1,25 @@
+[   3.0s] sendkey up (boot menu: Live (Debug) -> Setup (Debug))
+[   3.4s] sendkey up (boot menu: Live (Debug) -> Setup (Debug))
+[   4.5s] sendkey ret (boot Setup (Debug), text mode)
+[   6.3s] probe 720x400 nonblack=0.040
+[   9.1s] probe 720x400 nonblack=0.009
+[  12.0s] probe 720x400 nonblack=0.998
+[  15.8s] sendkey down
+[  18.5s] sendkey up
+[  21.2s] sendkey ret
+[  26.7s] pixel diff down: 19424/288000 (6.744%)
+[  26.8s] pixel diff up: 8763/288000 (3.043%)
+[  26.8s] pixel diff ret: 24808/288000 (8.614%)
+[  27.3s] info status: (qemu) i[K[Din[K[D[Dinf[K[D[D[Dinfo[K[D[D[D[Dinfo [K[D[D[D[D[Dinfo s[K[D[D[D[D[D[Dinfo st[K[D[D[D[D[D[D[Dinfo sta[K[D[D[D[D[D[D[D[Dinfo stat[K[D[D[D[D[D[D[D[D[Dinfo statu[K[D[D[D[D[D[D[D[D[D[Dinfo status[K | VM status: running | (qemu)
+VERDICT: setup-text-screen,key-down-changed,key-up-changed,key-ret-changed
+--- serial.log 9638 bytes
+VERDICT: no-fatal-error
+--- serial driver lines
+serial i8042prt   2
+serial kbdclass   0
+serial mouclass   2
+serial usbuhci    0
+serial usbhub     0
+serial hidusb     0
+serial kbdhid     0
+serial mouhid     0

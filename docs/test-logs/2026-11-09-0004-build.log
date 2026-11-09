@@ -1,0 +1,19 @@
+=== 2026-11-09T20:35:36+03:00  remote-build.sh build 0004-input-ps2-usb-hid bootcd
+host: ai1 (/home/l/build/reactos-lab/0004-input-ps2-usb-hid), RosBE 2.2.1 / GCC 8.4, -j 8
+command: cd /home/l/projects/reactos-lab && scripts/remote-build.sh build 0004-input-ps2-usb-hid bootcd
+rc: 0
+ninja: sync transferred 2 files (docs/test-tools harness), build already up to date;
+       bootcd.iso regenerated (mkisofs + isohybrid).
+
+ISO (on ai1):
+  path:   /home/l/build/reactos-lab/0004-input-ps2-usb-hid/output-MinGW-i386/bootcd.iso
+  size:   373293056 bytes (356 MiB)
+  mtime:  2026-11-09 17:35:47 UTC
+  sha256: 10e9492793c4b44dd4b0daf423b01efe99d15539676264401628907ffbf86061
+
+Driver binaries in the tree (built by feat-dev at 17:28-17:31 UTC):
+  drivers/input/i8042prt/i8042prt.sys  118784
+  drivers/hid/kbdhid/kbdhid.sys         53248
+  drivers/hid/mouhid/mouhid.sys         53248
+
+Build log (full tail): see harness/CI logs; rc=0, no compiler errors.

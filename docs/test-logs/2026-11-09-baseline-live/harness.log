@@ -1,0 +1,11 @@
+[  18.0s] serial shows a bugcheck while waiting for win32k.sys
+[  18.0s] bugcheck before the desktop (expected without 0001)
+[  19.0s] stable desktop screen not detected (win32k marker=False)
+[  21.5s] info status: (qemu) i[K[Din[K[D[Dinf[K[D[D[Dinfo[K[D[D[D[Dinfo [K[D[D[D[D[Dinfo s[K[D[D[D[D[D[Dinfo st[K[D[D[D[D[D[D[Dinfo sta[K[D[D[D[D[D[D[D[Dinfo stat[K[D[D[D[D[D[D[D[D[Dinfo statu[K[D[D[D[D[D[D[D[D[D[Dinfo status[K | VM status: running | (qemu)
+VERDICT: bugcheck-before-desktop,desktop-not-detected
+--- serial.log 11650 bytes
+140:*** Fatal System Error: 0xc000021a
+VERDICT: bugcheck
+*** Fatal System Error: 0xc000021a
+                       (0x0031FDAC,0xC000036F,0x00434598,0x00000000)
+

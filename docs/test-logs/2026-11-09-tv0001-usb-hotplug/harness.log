@@ -1,0 +1,28 @@
+[  16.0s] serial marker found: i8042prt.sys
+[  61.0s] device_add usb-mouse (serial offset 42030)
+[  72.0s] serial lines after hot-plug: 18
+    (/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1888610, CompleteStatus - C00000BB
+    (/drivers/usb/usbhub/usbhub.c:70) USBH_CompleteIrp: Irp - B1888610, CompleteStatus - C00000BB
+    (/drivers/usb/usbport/iface.c:636) USBHI_SetDeviceHandleData: UNIMPLEMENTED. FIXME.
+    (/drivers/usb/usbhub/pnp.c:2182) USBH_PdoStartDevice: call IoWMIRegistrationControl UNIMPLEMENTED. FIXME
+    (/base/services/umpnpmgr/install.c:118) Installing: USB\Vid_0627&Pid_0001\5&c3e83e4b&2
+    (/drivers/usb/usbport/endpoint.c:818) USBPORT_OpenPipe: DeviceHandle - B28592A0, FdoDevice - B1F80030, PipeHandle - B1A32270
+    (/drivers/hid/hidusb/hidusb.c:1418) Status 0
+    (/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device USB\Vid_0627&Pid_0001\5&c3e83e4b&2
+    err:(/dll/win32/newdev/newdev.c:1039) DevInstallW failed with error 31
+    (/base/services/umpnpmgr/install.c:245) InstallDevice failed for DeviceInstance 'USB\Vid_0627&Pid_0001\5&c3e83e4b&2'
+    (/base/services/umpnpmgr/install.c:118) Installing: HID\Vid_0627&Pid_0001\6&dc3a5f00&0001
+    (/ntoskrnl/io/pnpmgr/devaction.c:2610) NOTE: attempt to start an already started/uninitialized device HID\Vid_0627&Pid_0001\6&dc3a5f00&0001
+[ 126.5s] info status: (qemu) i[K[Din[K[D[Dinf[K[D[D[Dinfo[K[D[D[D[Dinfo [K[D[D[D[D[Dinfo s[K[D[D[D[D[D[Dinfo st[K[D[D[D[D[D[D[Dinfo sta[K[D[D[D[D[D[D[D[Dinfo stat[K[D[D[D[D[D[D[D[D[Dinfo statu[K[D[D[D[D[D[D[D[D[D[Dinfo status[K | VM status: running | (qemu)
+VERDICT: hotplug-serial-activity
+--- serial.log 43800 bytes
+VERDICT: no-fatal-error
+--- serial driver lines
+serial i8042prt   2
+serial kbdclass   1
+serial mouclass   1
+serial usbuhci    0
+serial usbhub     28
+serial hidusb     4
+serial kbdhid     1
+serial mouhid     1

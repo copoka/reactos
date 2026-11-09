@@ -1,0 +1,33 @@
+=== 2026-11-09T20:44:03+03:00  0001 test vehicle on ai1 (NOT part of the branch)
+host: ai1, tree: /home/l/build/reactos-lab/0004-input-ps2-usb-hid
+patch: features/0005-display-vbe-desktop/docs/patches/2026-11-09-0001-lz32-test-vehicle.patch
+       (sdk/cmake/CMakeMacros.cmake only: link resource-only DLL modules as C)
+
+commands (executed over ssh, no rsync after this point):
+  scp 2026-11-09-0001-lz32-test-vehicle.patch l@ai1:/home/l/build/reactos-lab/0004-input-ps2-usb-hid/0001-test-vehicle.patch
+  cd /home/l/build/reactos-lab/0004-input-ps2-usb-hid && patch -p1 < 0001-test-vehicle.patch
+  touch sdk/cmake/CMakeMacros.cmake
+  export PATH=$HOME/RosBE/2.2.1/i386/bin:$PATH; export ROS_ARCH=i386
+  cd output-MinGW-i386 && ninja -j 8 bootcd
+  cp -f bootcd.iso bootcd-0001-testvehicle.iso
+
+output:
+  patching file sdk/cmake/CMakeMacros.cmake
+  [0/1] Re-running CMake...
+  [44/44] mkisofs ... bootcd.iso (isohybrid)
+  real 0m21.142s
+  rc 0
+
+ISO B (HEAD e13b2aeb + test vehicle 0001):
+  path:   /home/l/build/reactos-lab/0004-input-ps2-usb-hid/output-MinGW-i386/bootcd-0001-testvehicle.iso
+  size:   373293056 bytes
+  sha256: 83bd47a744c04cd55d8172b9f2f082060f793fbcef1ae8c080c60e4ed75dd306
+
+ISO A (branch HEAD, no patch):
+  path:   output-MinGW-i386/bootcd.iso before the patch
+  size:   373293056 bytes
+  sha256: 10e9492793c4b44dd4b0daf423b01efe99d15539676264401628907ffbf86061
+
+NOTE: the working tree on ai1 now contains the patch and bootcd.iso == ISO B.
+A later `remote-build.sh sync` will overwrite the patched file; nothing was
+synced after the patch was applied. The patch lives only on ai1.
