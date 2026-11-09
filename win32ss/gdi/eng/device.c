@@ -298,7 +298,10 @@ EngpUpdateGraphicsDeviceList(VOID)
              pGraphicsDevice;
              pGraphicsDevice = pGraphicsDevice->pNextGraphicsDevice)
         {
-            if (!EngpHasVgaDriver(pGraphicsDevice))
+            /* Skip adapters that declare themselves VGA compatible, they are a
+               fallback for the real display driver, not the primary one. */
+            if (!(pGraphicsDevice->StateFlags & DISPLAY_DEVICE_VGA_COMPATIBLE) &&
+                !EngpHasVgaDriver(pGraphicsDevice))
             {
                 pNewPrimaryGraphicsDevice = pGraphicsDevice;
                 break;
