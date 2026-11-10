@@ -23,6 +23,8 @@ HKLM,"SYSTEM\CurrentControlSet\Services\bochsmp\Device0","DefaultSettings.XPanni
 HKLM,"SYSTEM\CurrentControlSet\Services\bochsmp\Device0","DefaultSettings.YPanning",0x00010001,0
 HKLM,"SYSTEM\CurrentControlSet\Services\bochsmp\Device0","Attach.RelativeX",0x00010001,0
 HKLM,"SYSTEM\CurrentControlSet\Services\bochsmp\Device0","Attach.RelativeY",0x00010001,0
+HKLM,"SYSTEM\CurrentControlSet\Services\bochsmp\Device0","Attach.ToDesktop",0x00010001,1
+HKLM,"SYSTEM\CurrentControlSet\Services\bochsmp\Device0","Attach.PrimaryDevice",0x00010001,1
 
 HKLM,"SYSTEM\CurrentControlSet\Services\bochsmp\Device1","Device Description",0x00000000,"Bochs Graphics Adapter"
 HKLM,"SYSTEM\CurrentControlSet\Services\bochsmp\Device1","InstalledDisplayDrivers",0x00010000,"framebuf"
