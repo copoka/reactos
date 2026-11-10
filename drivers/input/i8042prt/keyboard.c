@@ -12,6 +12,7 @@
 /* INCLUDES ****************************************************************/
 
 #include "i8042prt.h"
+#include "i8042queue.h"
 
 #include <poclass.h>
 #include <ndk/kdfuncs.h>
@@ -802,6 +803,7 @@ i8042KbdInterruptService(
 	PKEYBOARD_INPUT_DATA InputData;
 	ULONG Counter;
 	UCHAR PortStatus = 0, Output = 0;
+	USHORT ScanFlags;
 	BOOLEAN ToReturn = FALSE;
 	NTSTATUS Status;
 
@@ -856,7 +858,8 @@ i8042KbdInterruptService(
 			DeviceExtension->ComboPosition = 0;
 
 		/* Test for TAB + key combination */
-		if (InputData->MakeCode == 0x0F)
+		if (DeviceExtension->KeysInBuffer < PortDeviceExtension->Settings.KeyboardDataQueueSize &&
+			InputData->MakeCode == 0x0F)
 			DeviceExtension->TabPressed = !(InputData->Flags & KEY_BREAK);
 		else if (DeviceExtension->TabPressed)
 		{
@@ -919,33 +922,30 @@ i8042KbdInterruptService(
 		}
 	}
 
-	/* Update InputData */
-	if (DeviceExtension->KeysInBuffer >= PortDeviceExtension->Settings.KeyboardDataQueueSize)
-	{
-		/* No room for this scan code, drop it instead of overflowing the buffer */
-		WARN_(I8042PRT, "Keyboard buffer full, dropping scan code 0x%02x\n", Output);
-		DeviceExtension->KeyboardScanState = Normal;
-		return TRUE;
-	}
-	InputData->Flags = 0;
+	/* Drop the scan code if there is no room for it in the input queue */
+	ScanFlags = 0;
 	switch (DeviceExtension->KeyboardScanState)
 	{
 		case GotE0:
-			InputData->Flags |= KEY_E0;
+			ScanFlags |= KEY_E0;
 			break;
 		case GotE1:
-			InputData->Flags |= KEY_E1;
+			ScanFlags |= KEY_E1;
 			break;
 		default:
 			break;
 	}
 	DeviceExtension->KeyboardScanState = Normal;
-	if (Output & 0x80)
-		InputData->Flags |= KEY_BREAK;
-	else
-		InputData->Flags |= KEY_MAKE;
-	InputData->MakeCode = Output & 0x7f;
-	InputData->Reserved = 0;
+
+	if (!I8042KbdStoreScanCode(DeviceExtension->KeyboardBuffer,
+	                           PortDeviceExtension->Settings.KeyboardDataQueueSize,
+	                           DeviceExtension->KeysInBuffer,
+	                           Output,
+	                           ScanFlags))
+	{
+		WARN_(I8042PRT, "Keyboard buffer full, dropping scan code 0x%02x\n", Output);
+		return TRUE;
+	}
 
 	DeviceExtension->KeyboardHook.QueueKeyboardPacket(DeviceExtension->KeyboardHook.CallContext);
 
