@@ -2085,6 +2085,10 @@ RtlAllocateHeap(IN PVOID HeapPtr,
     if (RtlpHeapIsSpecial(Flags))
         return RtlDebugAllocateHeap(Heap, Flags, Size);
 
+    /* Tag counters are not maintained, ignore any tag in the flags.
+       Tag bits overlap with the special heap flags, so masked only here. */
+    Flags &= ~HEAP_TAG_MASK;
+
     /* Check for the maximum size */
     if (Size >= 0x80000000)
     {
@@ -2307,6 +2311,10 @@ BOOLEAN NTAPI RtlFreeHeap(
     /* Call special heap */
     if (RtlpHeapIsSpecial(Flags))
         return RtlDebugFreeHeap(Heap, Flags, Ptr);
+
+    /* Tag counters are not maintained, ignore any tag in the flags.
+       Tag bits overlap with the special heap flags, so masked only here. */
+    Flags &= ~HEAP_TAG_MASK;
 
     /* Get pointer to the heap entry */
     HeapEntry = (PHEAP_ENTRY)Ptr - 1;
@@ -2717,6 +2725,10 @@ RtlReAllocateHeap(HANDLE HeapPtr,
     /* Call special heap */
     if (RtlpHeapIsSpecial(Flags))
         return RtlDebugReAllocateHeap(Heap, Flags, Ptr, Size);
+
+    /* Tag counters are not maintained, ignore any tag in the flags.
+       Tag bits overlap with the special heap flags, so masked only here. */
+    Flags &= ~HEAP_TAG_MASK;
 
     /* Make sure size is valid */
     if (Size >= 0x80000000)
@@ -4032,6 +4044,12 @@ RtlExtendHeap(IN HANDLE Heap,
     return 0;
 }
 
+/*
+ * Number of entries in the tag table created on demand by RtlCreateTagHeap.
+ * Tag index 0 means "no tag", so this allows for 63 usable tags.
+ */
+#define RTL_TAG_ENTRY_COUNT 64
+
 ULONG
 NTAPI
 RtlCreateTagHeap(_In_ HANDLE HeapHandle,
@@ -4039,9 +4057,72 @@ RtlCreateTagHeap(_In_ HANDLE HeapHandle,
                  _In_opt_ PWSTR TagName,
                  _In_ PWSTR TagSubName)
 {
-    /* TODO */
-    UNIMPLEMENTED;
-    return 0;
+    PHEAP Heap = (PHEAP)HeapHandle;
+    PHEAP_TAG_ENTRY TagEntries;
+    PHEAP_TAG_ENTRY TagEntry;
+    ULONG TagIndex;
+    SIZE_T TableSize;
+    ULONG i;
+
+    /* Validate the heap handle */
+    if (!Heap || Heap->Signature != HEAP_SIGNATURE)
+    {
+        RtlSetLastWin32ErrorAndNtStatusFromNtStatus(STATUS_INVALID_PARAMETER);
+        return 0;
+    }
+
+    /* Tagging is not supported for special (debug and page) heaps */
+    if (RtlpHeapIsSpecial(Flags | Heap->ForceFlags))
+        return 0;
+
+    /* Tag names are informational only, the sub name is not stored */
+    UNREFERENCED_PARAMETER(TagSubName);
+
+    RtlLockHeap(HeapHandle);
+
+    /* Create the tag table on the first call */
+    if (!Heap->TagEntries)
+    {
+        TableSize = sizeof(HEAP_TAG_ENTRY) * RTL_TAG_ENTRY_COUNT;
+        TagEntries = (PHEAP_TAG_ENTRY)RtlAllocateHeap(HeapHandle,
+                                                      HEAP_NO_SERIALIZE,
+                                                      TableSize);
+
+        if (TagEntries)
+        {
+            RtlZeroMemory(TagEntries, TableSize);
+            Heap->TagEntries = TagEntries;
+            Heap->MaximumTagIndex = RTL_TAG_ENTRY_COUNT;
+            Heap->NextAvailableTagIndex = 1;
+        }
+    }
+
+    /* Fail if there is no tag table or no free entry in it */
+    if (!Heap->TagEntries ||
+        Heap->NextAvailableTagIndex >= Heap->MaximumTagIndex)
+    {
+        RtlUnlockHeap(HeapHandle);
+        return 0;
+    }
+
+    /* Allocate the next tag index */
+    TagIndex = Heap->NextAvailableTagIndex++;
+    TagEntry = &Heap->TagEntries[TagIndex];
+    TagEntry->TagIndex = (USHORT)TagIndex;
+
+    /* Store the tag name, truncating it if it does not fit */
+    if (TagName)
+    {
+        for (i = 0; i < RTL_NUMBER_OF(TagEntry->TagName) - 1 && TagName[i]; i++)
+            TagEntry->TagName[i] = TagName[i];
+
+        TagEntry->TagName[i] = UNICODE_NULL;
+    }
+
+    RtlUnlockHeap(HeapHandle);
+
+    /* The result is passed as Flags to the heap allocation functions */
+    return (ULONG)TagIndex << HEAP_TAG_SHIFT;
 }
 
 NTSTATUS

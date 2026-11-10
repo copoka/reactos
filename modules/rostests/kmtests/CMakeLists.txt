@@ -181,6 +181,10 @@ list(APPEND KMTEST_SOURCE
     ntos_mm/NtCreateSection_user.c
     ntos_po/PoIrp_user.c
     tcpip/TcpIp_user.c
+
+    # RtlCreateTagHeap is exported by ntdll but not by ntoskrnl, so this test
+    # can only run in user-mode
+    rtl/RtlCreateTagHeap.c
     ${COMMON_SOURCE}
 
     kmtest/kmtest.rc)
