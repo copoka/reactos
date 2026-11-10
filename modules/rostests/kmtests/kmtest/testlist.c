@@ -27,6 +27,7 @@ KMT_TESTFUNC Test_NtSystemDebugControl;
 KMT_TESTFUNC Test_PoIrp;
 KMT_TESTFUNC Test_RtlAvlTree;
 KMT_TESTFUNC Test_RtlCaptureContext;
+KMT_TESTFUNC Test_RtlCreateTagHeap;
 KMT_TESTFUNC Test_RtlException;
 KMT_TESTFUNC Test_RtlIntSafe;
 KMT_TESTFUNC Test_RtlMemory;
@@ -62,6 +63,7 @@ const KMT_TEST TestList[] =
     { "NtSystemDebugControl",         Test_NtSystemDebugControl },
     { "PoIrp",                        Test_PoIrp },
     { "RtlAvlTree",                   Test_RtlAvlTree },
+    { "RtlCreateTagHeap",             Test_RtlCreateTagHeap },
     { "RtlException",                 Test_RtlException },
     { "RtlIntSafe",                   Test_RtlIntSafe },
     { "RtlMemory",                    Test_RtlMemory },
