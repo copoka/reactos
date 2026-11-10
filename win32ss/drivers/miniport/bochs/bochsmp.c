@@ -364,14 +364,16 @@ BochsSetCurrentMode(
     Ret = BochsWriteDispIAndCheck(DeviceExtension, VBE_DISPI_INDEX_XRES, AvailableModeInfo->XResolution) &&
           BochsWriteDispIAndCheck(DeviceExtension, VBE_DISPI_INDEX_YRES, AvailableModeInfo->YResolution) &&
           BochsWriteDispIAndCheck(DeviceExtension, VBE_DISPI_INDEX_BPP, 32);
-    /* Always enable screen, even if display settings change failed */
-    BochsWriteDispI(DeviceExtension, VBE_DISPI_INDEX_ENABLE, VBE_DISPI_LFB_ENABLED | VBE_DISPI_ENABLED);
     if (!Ret)
     {
+        /* Leave the screen disabled, the mode registers hold garbage now */
         VideoDebugPrint((Error, "Bochs: failed to change mode\n"));
         StatusBlock->Status = ERROR_INVALID_PARAMETER;
         return FALSE;
     }
+
+    /* The mode registers are valid now, so the screen can be enabled */
+    BochsWriteDispI(DeviceExtension, VBE_DISPI_INDEX_ENABLE, VBE_DISPI_LFB_ENABLED | VBE_DISPI_ENABLED);
 
     /* Enable VGA (QEMU secondary-vga disables it by default) */
     if (!DeviceExtension->IoPorts.RangeInIoSpace)
