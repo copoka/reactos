@@ -31,27 +31,3 @@ ISO A (branch HEAD, no patch):
 NOTE: the working tree on ai1 now contains the patch and bootcd.iso == ISO B.
 A later `remote-build.sh sync` will overwrite the patched file; nothing was
 synced after the patch was applied. The patch lives only on ai1.
-
-=== 2026-11-09T21:15 local (18:15 UTC)  r2: test vehicle rebuilt on HEAD 156d0ddc7cc
-Why: the dev sync reset the tree, so the previous 0001 patch (HEAD e13b2aeb) was gone
-     and both ISOs had to be rebuilt for the [KBDHID] usage-count fix.
-commands (over ssh, no rsync after the patch):
-  scp 2026-11-09-0001-lz32-test-vehicle.patch l@ai1:/home/l/build/reactos-lab/0004-input-ps2-usb-hid/0001-test-vehicle.patch
-  cd .../0004-input-ps2-usb-hid && patch -p1 --dry-run < 0001-test-vehicle.patch && patch -p1 < 0001-test-vehicle.patch
-  touch sdk/cmake/CMakeMacros.cmake
-  export PATH=$HOME/RosBE/2.2.1/i386/bin:$PATH; export ROS_ARCH=i386
-  cd output-MinGW-i386 && time ninja -j 8 bootcd && cp -f bootcd.iso bootcd-0001-testvehicle.iso
-output:
-  checking file sdk/cmake/CMakeMacros.cmake / patching file sdk/cmake/CMakeMacros.cmake
-  [0/1] Re-running CMake...
-  [6/44] Linking C shared module dll/win32/lz32/lz32.dll
-  [43/44] mkisofs ... bootcd.iso (isohybrid)
-  real 0m21.5s, rc 0
-ISO B (HEAD 156d0ddc7cc + test vehicle 0001):
-  path:   /home/l/build/reactos-lab/0004-input-ps2-usb-hid/output-MinGW-i386/bootcd-0001-testvehicle.iso
-  size:   373293056 bytes
-  mtime:  2026-11-09 18:15:55 UTC
-  sha256: 5d7da4d811cbf22f99499510674c87b7cdd778c3bc592260a6039d4306ba475e
-Previous ISO B (HEAD e13b2aeb): 83bd47a744c04cd55d8172b9f2f082060f793fbcef1ae8c080c60e4ed75dd306
-NOTE: bootcd.iso on ai1 is now ISO B. No sync was run after the patch; QEMU runs used
-      --iso bootcd-0001-testvehicle.iso (input-smoke.sh does not sync).

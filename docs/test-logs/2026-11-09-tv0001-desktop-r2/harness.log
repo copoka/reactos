@@ -1,21 +1,0 @@
-[  18.0s] serial marker found: win32k.sys
-[  18.8s] probe 800x600 nonblack=1.000
-[  23.5s] probe 800x600 nonblack=1.000
-[  29.5s] pixel diff after window drag: 142297/480000 (29.645%)
-[  48.1s] open Run dialog (meta_l-r)
-[  61.8s] pixel diff after typing abc: 730/480000 (0.152%)
-[  65.3s] pixel diff after Start click: 56037/480000 (11.674%)
-[  71.7s] pixel diff after Notepad drag: 164080/480000 (34.183%)
-[  76.7s] info status: (qemu) i[K[Din[K[D[Dinf[K[D[D[Dinfo[K[D[D[D[Dinfo [K[D[D[D[D[Dinfo s[K[D[D[D[D[D[Dinfo st[K[D[D[D[D[D[D[Dinfo sta[K[D[D[D[D[D[D[D[Dinfo stat[K[D[D[D[D[D[D[D[D[Dinfo statu[K[D[D[D[D[D[D[D[D[D[Dinfo status[K | VM status: running | (qemu)
-VERDICT: drag-moved-window,typing-changed-screen,mouse-click-opened-menu,mouse-drag-moved-notepad
---- serial.log 36928 bytes
-VERDICT: no-fatal-error
---- serial driver lines
-serial i8042prt   2
-serial kbdclass   1
-serial mouclass   1
-serial usbuhci    0
-serial usbhub     0
-serial hidusb     0
-serial kbdhid     0
-serial mouhid     0
