@@ -294,12 +294,12 @@ EngpUpdateGraphicsDeviceList(VOID)
     /* Choose a primary device (if none already exists) */
     if (!gpPrimaryGraphicsDevice)
     {
+        /* First look for a real display driver that does not declare itself
+           VGA compatible; such an adapter is the natural primary device. */
         for (pGraphicsDevice = gpGraphicsDeviceFirst;
              pGraphicsDevice;
              pGraphicsDevice = pGraphicsDevice->pNextGraphicsDevice)
         {
-            /* Skip adapters that declare themselves VGA compatible, they are a
-               fallback for the real display driver, not the primary one. */
             if (!(pGraphicsDevice->StateFlags & DISPLAY_DEVICE_VGA_COMPATIBLE) &&
                 !EngpHasVgaDriver(pGraphicsDevice))
             {
@@ -307,6 +307,25 @@ EngpUpdateGraphicsDeviceList(VOID)
                 break;
             }
         }
+        /* A VBE miniport marks itself VGA compatible, exactly like the VGA save
+           driver does, so the first pass finds nothing on such a system. Accept
+           a VGA-compatible adapter as long as its driver is not VGA save, which
+           can only do 640x480x8. */
+        if (!pNewPrimaryGraphicsDevice)
+        {
+            for (pGraphicsDevice = gpGraphicsDeviceFirst;
+                 pGraphicsDevice;
+                 pGraphicsDevice = pGraphicsDevice->pNextGraphicsDevice)
+            {
+                if (!EngpHasVgaDriver(pGraphicsDevice))
+                {
+                    pNewPrimaryGraphicsDevice = pGraphicsDevice;
+                    break;
+                }
+            }
+        }
+        /* Nothing better available (VGA-only system, Safe Mode): keep using the
+           first device, as before. */
         if (!pNewPrimaryGraphicsDevice)
             pNewPrimaryGraphicsDevice = gpGraphicsDeviceFirst;
         if (pNewPrimaryGraphicsDevice)
