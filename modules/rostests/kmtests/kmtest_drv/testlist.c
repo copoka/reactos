@@ -31,6 +31,7 @@ KMT_TESTFUNC Test_FsRtlTunnel;
 KMT_TESTFUNC Test_HalPortIo;
 #endif
 KMT_TESTFUNC Test_HalSystemInfo;
+KMT_TESTFUNC Test_I8042KbdQueue;
 KMT_TESTFUNC Test_IoCreateFile;
 KMT_TESTFUNC Test_IoDeviceInterface;
 KMT_TESTFUNC Test_IoDeviceProperty;
@@ -120,6 +121,7 @@ const KMT_TEST TestList[] =
     { "HalPortIo",                          Test_HalPortIo },
 #endif
     { "HalSystemInfo",                      Test_HalSystemInfo },
+    { "I8042KbdQueue",                      Test_I8042KbdQueue },
     { "IoCreateFile",                       Test_IoCreateFile },
     { "IoDeviceInterface",                  Test_IoDeviceInterface },
     { "IoDeviceProperty",                   Test_IoDeviceProperty },

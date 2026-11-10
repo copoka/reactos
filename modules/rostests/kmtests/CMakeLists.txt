@@ -1,5 +1,6 @@
 
 include_directories(include)
+include_directories(${REACTOS_SOURCE_DIR}/drivers/input/i8042prt)
 
 #
 # subdirectories containing special-purpose drivers
@@ -49,6 +50,7 @@ list(APPEND KMTEST_DRV_SOURCE
     example/Example.c
     example/KernelType.c
     hal/HalSystemInfo.c
+    i8042prt/KbdQueue.c
     npfs/NpfsConnect.c
     npfs/NpfsCreate.c
     npfs/NpfsFileInfo.c
