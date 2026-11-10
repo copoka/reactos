@@ -1,6 +1,8 @@
 ; Registry entries for the Intel e1000 adapter and for the network components
-; it depends on. mkhive only understands the [AddReg] section and absolute
-; HKLM key names, so no HKR or AddService entries are used here.
+; it depends on. This file is included in the Live CD hives only, so it never
+; reaches the registry of an installed system. mkhive only understands the
+; [AddReg] section and absolute HKLM key names, so no HKR or AddService
+; entries are used here.
 
 [AddReg]
 ; e1000 adapter as a critical device (Live CD has no PnP installer)
@@ -49,7 +51,7 @@ HKLM,"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\{3F2A5C10-1E
 HKLM,"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\WinSock","UseDelayedAcceptance",0x00010001,0x00000000
 HKLM,"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\WinSock","MaxSockAddrLength",0x00010001,0x00000010
 HKLM,"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\WinSock","MinSockAddrLength",0x00010001,0x00000010
-HKLM,"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\WinSock","HelperDllName",0x00020000,"%SystemRoot%\System32\wshtcpip.dll"
+HKLM,"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\WinSock","HelperDllName",0x00000000,"%SystemRoot%\System32\wshtcpip.dll"
 HKLM,"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\WinSock","Mapping",0x00000001,0e,00,00,00,03,00,00,00,02,00,00,00,01,00,00,00,06,00,00,00,02,00,00,00,01,00,00,00,00,00,00,00,02,00,00,00,00,00,00,00,06,00,00,00,00,00,00,00,00,00,00,00,06,00,00,00,00,00,00,00,01,00,00,00,06,00,00,00,02,00,00,00,02,00,00,00,11,00,00,00,02,00,00,00,02,00,00,00,00,00,00,00,02,00,00,00,00,00,00,00,11,00,00,00,00,00,00,00,00,00,00,00,11,00,00,00,00,00,00,00,02,00,00,00,11,00,00,00,02,00,00,00,03,00,00,00,00,00,00,00,02,00,00,00,03,00,00,00,01,00,00,00,02,00,00,00,03,00,00,00,ff,00,00,00,02,00,00,00,03,00,00,00,06,00,00,00
 
 ; DHCP client service
@@ -254,4 +256,3 @@ HKLM,"SYSTEM\CurrentControlSet\Services\Winsock2\Parameters\Protocol_Catalog9\Ca
 00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
 00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
 00,00,00,00,00,00,00,00
-
