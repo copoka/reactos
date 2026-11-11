@@ -800,7 +800,6 @@ i8042KbdInterruptService(
 {
 	PI8042_KEYBOARD_EXTENSION DeviceExtension;
 	PPORT_DEVICE_EXTENSION PortDeviceExtension;
-	PKEYBOARD_INPUT_DATA InputData;
 	ULONG Counter;
 	UCHAR PortStatus = 0, Output = 0;
 	USHORT ScanFlags;
@@ -812,7 +811,6 @@ i8042KbdInterruptService(
 	__analysis_assume(Context != NULL);
 	DeviceExtension = Context;
 	PortDeviceExtension = DeviceExtension->Common.PortDeviceExtension;
-	InputData = DeviceExtension->KeyboardBuffer + DeviceExtension->KeysInBuffer;
 	Counter = PortDeviceExtension->Settings.PollStatusIterations;
 
 	while (Counter)
@@ -858,36 +856,35 @@ i8042KbdInterruptService(
 			DeviceExtension->ComboPosition = 0;
 
 		/* Test for TAB + key combination */
-		if (DeviceExtension->KeysInBuffer < PortDeviceExtension->Settings.KeyboardDataQueueSize &&
-			InputData->MakeCode == 0x0F)
-			DeviceExtension->TabPressed = !(InputData->Flags & KEY_BREAK);
+		if ((Output & 0x7f) == 0x0f)
+			DeviceExtension->TabPressed = !(Output & 0x80);
 		else if (DeviceExtension->TabPressed)
 		{
 			DeviceExtension->TabPressed = FALSE;
 
-            /* Check which action to do */
-            if (InputData->MakeCode == 0x25)
-            {
-                /* k - Breakpoint */
-                DbgBreakPointWithStatus(DBG_STATUS_SYSRQ);
-            }
-            else if (InputData->MakeCode == 0x30)
-            {
-                /* b - Bugcheck */
-                KeBugCheck(MANUALLY_INITIATED_CRASH);
-            }
-            else
-            {
-			    /* Send request to the kernel debugger.
-			     * Unknown requests will be ignored. */
-			    KdSystemDebugControl(' soR',
-			                         (PVOID)(ULONG_PTR)InputData->MakeCode,
-			                         0,
-			                         NULL,
-			                         0,
-			                         NULL,
-			                         KernelMode);
-            }
+			/* Check which action to do */
+			if ((Output & 0x7f) == 0x25)
+			{
+				/* k - Breakpoint */
+				DbgBreakPointWithStatus(DBG_STATUS_SYSRQ);
+			}
+			else if ((Output & 0x7f) == 0x30)
+			{
+				/* b - Bugcheck */
+				KeBugCheck(MANUALLY_INITIATED_CRASH);
+			}
+			else
+			{
+				/* Send request to the kernel debugger.
+				 * Unknown requests will be ignored. */
+				KdSystemDebugControl(' soR',
+				                     (PVOID)(ULONG_PTR)(Output & 0x7f),
+				                     0,
+				                     NULL,
+				                     0,
+				                     NULL,
+				                     KernelMode);
+			}
 		}
 	}
 
