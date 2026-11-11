@@ -40,6 +40,316 @@ IopFixupDeviceId(PWCHAR String)
     }
 }
 
+/* Upper bound on the number of class instances enumerated for one service */
+#define IOP_MAX_CLASS_INSTANCES 1000
+
+/*
+ * Give a device installed from the critical device database the driver key
+ * name that an INF installation would have stored.
+ *
+ * IopInstallCriticalDevice() copies only the Service and ClassGUID values
+ * from the database to the instance key, while every consumer of
+ * DevicePropertyDriverKeyName (IoGetDeviceProperty, IoOpenDeviceRegistryKey,
+ * the NDIS miniport wrapper, ...) expects a Driver value of the form
+ * "<ClassGUID>\<instance>". Find the class instance that was created for our
+ * service and store its name, but only when that instance is unique.
+ */
+static
+VOID
+IopSetCriticalDeviceDriverKeyName(
+    _In_ HANDLE InstanceKey,
+    _In_ PUNICODE_STRING ServiceName)
+{
+    UNICODE_STRING ClassGuidU = RTL_CONSTANT_STRING(L"ClassGUID");
+    UNICODE_STRING DriverU = RTL_CONSTANT_STRING(L"Driver");
+    UNICODE_STRING ServiceU = RTL_CONSTANT_STRING(L"Service");
+    UNICODE_STRING ClassRootU = RTL_CONSTANT_STRING(L"\\Registry\\Machine\\System\\CurrentControlSet\\Control\\Class\\");
+    UNICODE_STRING ClassPathU, ClassGuid, ClassInstanceNameU, ClassServiceU, DriverNameU, FoundInstanceU;
+    OBJECT_ATTRIBUTES ObjectAttributes;
+    PKEY_VALUE_PARTIAL_INFORMATION PartialInfo;
+    PKEY_BASIC_INFORMATION BasicInfo;
+    HANDLE ClassKey, ClassInstanceKey;
+    PWCHAR ClassGuidBuffer, ClassPathBuffer, DriverNameBuffer, FoundInstanceBuffer;
+    ULONG Length, PartialInfoSize, Index, Found, NameLength;
+    BOOLEAN Complete;
+    NTSTATUS Status;
+
+    ClassKey = ClassInstanceKey = NULL;
+    ClassGuidBuffer = ClassPathBuffer = DriverNameBuffer = FoundInstanceBuffer = NULL;
+    PartialInfo = NULL;
+    PartialInfoSize = 0;
+    BasicInfo = NULL;
+    FoundInstanceU.Buffer = NULL;
+    FoundInstanceU.Length = FoundInstanceU.MaximumLength = 0;
+    Found = 0;
+    Complete = FALSE;
+
+    /* Read the class GUID that was copied to the instance key */
+    Status = ZwQueryValueKey(InstanceKey,
+                             &ClassGuidU,
+                             KeyValuePartialInformation,
+                             NULL,
+                             0,
+                             &Length);
+    if ((Status != STATUS_BUFFER_OVERFLOW) && (Status != STATUS_BUFFER_TOO_SMALL))
+        return;
+
+    PartialInfo = ExAllocatePoolWithTag(PagedPool, Length, TAG_IO);
+    if (!PartialInfo)
+        return;
+    PartialInfoSize = Length;
+
+    Status = ZwQueryValueKey(InstanceKey,
+                             &ClassGuidU,
+                             KeyValuePartialInformation,
+                             PartialInfo,
+                             PartialInfoSize,
+                             &Length);
+    if (!NT_SUCCESS(Status) ||
+        (PartialInfo->Type != REG_SZ) ||
+        (PartialInfo->DataLength < sizeof(WCHAR)))
+        goto done;
+
+    /*
+     * All the lengths below are stored in USHORTs, so a value that does not
+     * fit is rejected instead of being truncated: a wrapped MaximumLength
+     * would make the buffers smaller than the data that is copied into them.
+     */
+    if (PartialInfo->DataLength >= 0x8000)
+        goto done;
+
+    /* Keep a copy of the class GUID, the buffer is reused below */
+    ClassGuid.Length = ClassGuid.MaximumLength = (USHORT)(PartialInfo->DataLength - sizeof(WCHAR));
+    ClassGuidBuffer = ExAllocatePoolWithTag(PagedPool, ClassGuid.Length + sizeof(WCHAR), TAG_IO);
+    if (!ClassGuidBuffer)
+        goto done;
+    RtlCopyMemory(ClassGuidBuffer, PartialInfo->Data, ClassGuid.Length);
+    ClassGuidBuffer[ClassGuid.Length / sizeof(WCHAR)] = UNICODE_NULL;
+    ClassGuid.Buffer = ClassGuidBuffer;
+
+    /* Open the class key that holds the instances of the device */
+    NameLength = ClassRootU.Length + ClassGuid.Length + sizeof(UNICODE_NULL);
+    if (NameLength > 0x7FFE)
+        goto done;
+    ClassPathU.MaximumLength = (USHORT)NameLength;
+    ClassPathU.Length = ClassPathU.MaximumLength - sizeof(UNICODE_NULL);
+    ClassPathBuffer = ExAllocatePoolWithTag(PagedPool, ClassPathU.MaximumLength, TAG_IO);
+    if (!ClassPathBuffer)
+        goto done;
+    ClassPathU.Buffer = ClassPathBuffer;
+    RtlCopyMemory(ClassPathBuffer, ClassRootU.Buffer, ClassRootU.Length);
+    RtlCopyMemory(ClassPathBuffer + (ClassRootU.Length / sizeof(WCHAR)),
+                  ClassGuid.Buffer,
+                  ClassGuid.Length);
+    ClassPathBuffer[ClassPathU.Length / sizeof(WCHAR)] = UNICODE_NULL;
+
+    InitializeObjectAttributes(&ObjectAttributes,
+                               &ClassPathU,
+                               OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE,
+                               NULL,
+                               NULL);
+    Status = ZwOpenKey(&ClassKey, KEY_ENUMERATE_SUB_KEYS, &ObjectAttributes);
+    if (!NT_SUCCESS(Status))
+    {
+        DPRINT("Can not open the class key '%wZ' (0x%lx)\n", &ClassPathU, Status);
+        goto done;
+    }
+
+    /*
+     * Look for the instances that refer to our service. Several devices of
+     * one class can share the same service, so a single match is not enough:
+     * writing the first one would give this device the driver key of another
+     * device. Count the candidates and remember the name of the first one.
+     */
+    for (Index = 0; Index < IOP_MAX_CLASS_INSTANCES; Index++)
+    {
+        Status = ZwEnumerateKey(ClassKey,
+                                Index,
+                                KeyBasicInformation,
+                                NULL,
+                                0,
+                                &Length);
+        if (Status == STATUS_NO_MORE_ENTRIES)
+        {
+            Complete = TRUE;
+            break;
+        }
+        else if ((Status != STATUS_BUFFER_OVERFLOW) && (Status != STATUS_BUFFER_TOO_SMALL))
+        {
+            break;
+        }
+
+        BasicInfo = ExAllocatePoolWithTag(PagedPool, Length, TAG_IO);
+        if (!BasicInfo)
+            break;
+
+        Status = ZwEnumerateKey(ClassKey,
+                                Index,
+                                KeyBasicInformation,
+                                BasicInfo,
+                                Length,
+                                &Length);
+        if (!NT_SUCCESS(Status))
+            goto next;
+
+        ClassInstanceNameU.Buffer = BasicInfo->Name;
+        ClassInstanceNameU.Length = ClassInstanceNameU.MaximumLength = (USHORT)BasicInfo->NameLength;
+
+        InitializeObjectAttributes(&ObjectAttributes,
+                                   &ClassInstanceNameU,
+                                   OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE,
+                                   ClassKey,
+                                   NULL);
+        Status = ZwOpenKey(&ClassInstanceKey, KEY_QUERY_VALUE, &ObjectAttributes);
+        if (!NT_SUCCESS(Status))
+            goto next;
+
+        /* Compare the service of the instance with the service of the device */
+        Status = ZwQueryValueKey(ClassInstanceKey,
+                                 &ServiceU,
+                                 KeyValuePartialInformation,
+                                 NULL,
+                                 0,
+                                 &Length);
+        if ((Status != STATUS_BUFFER_OVERFLOW) && (Status != STATUS_BUFFER_TOO_SMALL))
+            goto next;
+
+        /* The value can be longer than the class GUID that was read before */
+        if (Length > PartialInfoSize)
+        {
+            ExFreePool(PartialInfo);
+            PartialInfo = NULL;
+            PartialInfoSize = 0;
+
+            PartialInfo = ExAllocatePoolWithTag(PagedPool, Length, TAG_IO);
+            if (!PartialInfo)
+                goto done;
+            PartialInfoSize = Length;
+        }
+
+        Status = ZwQueryValueKey(ClassInstanceKey,
+                                 &ServiceU,
+                                 KeyValuePartialInformation,
+                                 PartialInfo,
+                                 PartialInfoSize,
+                                 &Length);
+        if (!NT_SUCCESS(Status) ||
+            (PartialInfo->Type != REG_SZ) ||
+            (PartialInfo->DataLength < sizeof(WCHAR)))
+            goto next;
+
+        /* Same USHORT bound as for the class GUID above */
+        if (PartialInfo->DataLength >= 0x8000)
+            goto next;
+
+        ClassServiceU.Buffer = (PWCHAR)PartialInfo->Data;
+        ClassServiceU.Length = ClassServiceU.MaximumLength = (USHORT)(PartialInfo->DataLength - sizeof(WCHAR));
+        if (!RtlEqualUnicodeString(&ClassServiceU, ServiceName, TRUE))
+            goto next;
+
+        /* Another candidate makes the match ambiguous, stop looking */
+        Found++;
+        if (Found > 1)
+            break;
+
+        FoundInstanceBuffer = ExAllocatePoolWithTag(PagedPool, ClassInstanceNameU.Length, TAG_IO);
+        if (!FoundInstanceBuffer)
+        {
+            DPRINT1("Failed to copy the class instance name\n");
+            goto done;
+        }
+
+        RtlCopyMemory(FoundInstanceBuffer, ClassInstanceNameU.Buffer, ClassInstanceNameU.Length);
+        FoundInstanceU.Buffer = FoundInstanceBuffer;
+        FoundInstanceU.Length = FoundInstanceU.MaximumLength = ClassInstanceNameU.Length;
+
+next:
+        if (ClassInstanceKey)
+        {
+            ZwClose(ClassInstanceKey);
+            ClassInstanceKey = NULL;
+        }
+        if (BasicInfo)
+        {
+            ExFreePool(BasicInfo);
+            BasicInfo = NULL;
+        }
+    }
+
+    if (Index == IOP_MAX_CLASS_INSTANCES)
+    {
+        DPRINT1("Too many class instances below '%wZ'\n", &ClassPathU);
+        goto done;
+    }
+
+    /*
+     * A single candidate is only trusted when the whole class key was
+     * enumerated: an enumeration error could hide a second instance.
+     */
+    if (!Complete)
+    {
+        DPRINT1("Failed to enumerate the class instances below '%wZ'\n", &ClassPathU);
+        goto done;
+    }
+
+    if (Found != 1)
+    {
+        if (Found == 0)
+            DPRINT("No class instance found for the service '%wZ'\n", ServiceName);
+        else
+            DPRINT1("Ambiguous class instance for the service '%wZ', no driver key name is set\n", ServiceName);
+        goto done;
+    }
+
+    /* Compose "<ClassGUID>\<instance>" and store it as the driver key name */
+    NameLength = ClassGuid.Length + sizeof(WCHAR) +
+                 FoundInstanceU.Length + sizeof(UNICODE_NULL);
+    if (NameLength > 0x7FFE)
+        goto done;
+
+    DriverNameU.MaximumLength = (USHORT)NameLength;
+    DriverNameU.Length = DriverNameU.MaximumLength - sizeof(UNICODE_NULL);
+    DriverNameBuffer = ExAllocatePoolWithTag(PagedPool, DriverNameU.MaximumLength, TAG_IO);
+    if (!DriverNameBuffer)
+        goto done;
+    DriverNameU.Buffer = DriverNameBuffer;
+    RtlCopyMemory(DriverNameBuffer, ClassGuid.Buffer, ClassGuid.Length);
+    DriverNameBuffer[ClassGuid.Length / sizeof(WCHAR)] = L'\\';
+    RtlCopyMemory(DriverNameBuffer + (ClassGuid.Length / sizeof(WCHAR)) + 1,
+                  FoundInstanceU.Buffer,
+                  FoundInstanceU.Length);
+    DriverNameBuffer[DriverNameU.Length / sizeof(WCHAR)] = UNICODE_NULL;
+
+    Status = ZwSetValueKey(InstanceKey,
+                           &DriverU,
+                           0,
+                           REG_SZ,
+                           DriverNameBuffer,
+                           DriverNameU.Length + sizeof(WCHAR));
+    if (NT_SUCCESS(Status))
+        DPRINT("Driver key name '%wZ' for the service '%wZ'\n", &DriverNameU, ServiceName);
+    else
+        DPRINT1("Failed to write the driver key name (0x%lx)\n", Status);
+
+done:
+    if (FoundInstanceBuffer)
+        ExFreePool(FoundInstanceBuffer);
+    if (BasicInfo)
+        ExFreePool(BasicInfo);
+    if (DriverNameBuffer)
+        ExFreePool(DriverNameBuffer);
+    if (ClassInstanceKey)
+        ZwClose(ClassInstanceKey);
+    if (ClassKey)
+        ZwClose(ClassKey);
+    if (ClassPathBuffer)
+        ExFreePool(ClassPathBuffer);
+    if (ClassGuidBuffer)
+        ExFreePool(ClassGuidBuffer);
+    if (PartialInfo)
+        ExFreePool(PartialInfo);
+}
+
 VOID
 NTAPI
 IopInstallCriticalDevice(PDEVICE_NODE DeviceNode)
@@ -47,6 +357,7 @@ IopInstallCriticalDevice(PDEVICE_NODE DeviceNode)
     NTSTATUS Status;
     HANDLE CriticalDeviceKey, InstanceKey;
     OBJECT_ATTRIBUTES ObjectAttributes;
+    UNICODE_STRING ServiceNameU;
     UNICODE_STRING CriticalDeviceKeyU = RTL_CONSTANT_STRING(L"\\Registry\\Machine\\System\\CurrentControlSet\\Control\\CriticalDeviceDatabase");
     UNICODE_STRING CompatibleIdU = RTL_CONSTANT_STRING(L"CompatibleIDs");
     UNICODE_STRING HardwareIdU = RTL_CONSTANT_STRING(L"HardwareID");
@@ -354,6 +665,22 @@ IopInstallCriticalDevice(PDEVICE_NODE DeviceNode)
                         }
 
                         DPRINT("Installed service '%S' for critical device '%wZ'\n", PartialInfo->Data, &ChildIdNameU);
+
+                        /*
+                         * Let the device report a driver key name, so that
+                         * IoOpenDeviceRegistryKey(PLUGPLAY_REGKEY_DRIVER) and
+                         * DevicePropertyDriverKeyName work as for a device
+                         * that was installed by its INF file. The length ends
+                         * up in a USHORT, so oversized values are skipped.
+                         */
+                        if ((PartialInfo->DataLength >= sizeof(WCHAR)) &&
+                            (PartialInfo->DataLength < 0x8000))
+                        {
+                            ServiceNameU.Buffer = (PWCHAR)PartialInfo->Data;
+                            ServiceNameU.Length = ServiceNameU.MaximumLength =
+                                (USHORT)(PartialInfo->DataLength - sizeof(WCHAR));
+                            IopSetCriticalDeviceDriverKeyName(InstanceKey, &ServiceNameU);
+                        }
                     }
                     else
                     {

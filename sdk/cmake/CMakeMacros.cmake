@@ -813,6 +813,14 @@ function(add_registry_inf)
     endforeach()
 endfunction()
 
+function(add_livecd_registry_inf)
+    # Add to the livecd only inf files list
+    foreach(_file ${ARGN})
+        set(_source_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file}")
+        set_property(GLOBAL APPEND PROPERTY LIVECD_REGISTRY_INF_LIST ${_source_file})
+    endforeach()
+endfunction()
+
 function(create_registry_hives)
 
     # Shortcut to the registry.inf file
@@ -856,9 +864,23 @@ function(create_registry_hives)
         DESTINATION reactos
         NO_CAB FOR bootcd regtest)
 
+    # Get the list of inf files that are included in the livecd hives only
+    get_property(_livecd_inf_list GLOBAL PROPERTY LIVECD_REGISTRY_INF_LIST)
+
+    # Convert them to utf16le
+    foreach(_file ${_livecd_inf_list})
+        get_filename_component(_file_name ${_file} NAME_WE)
+        file(RELATIVE_PATH _subdir ${CMAKE_SOURCE_DIR} ${_file})
+        get_filename_component(_subdir ${_subdir} DIRECTORY)
+        set(_converted_file ${CMAKE_BINARY_DIR}/${_subdir}/${_file_name}_utf16.inf)
+        utf16le_convert(${_file} ${_converted_file})
+        list(APPEND _livecd_converted_files ${_converted_file})
+    endforeach()
+
     # LiveCD hives
     list(APPEND _livecd_inf_files
         ${_registry_inf}
+        ${_livecd_converted_files}
         ${CMAKE_SOURCE_DIR}/boot/bootdata/livecd.inf
         ${CMAKE_SOURCE_DIR}/boot/bootdata/caroots.inf)
     if(SARCH STREQUAL "xbox")
