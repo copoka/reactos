@@ -10,7 +10,8 @@ list(APPEND SOURCE
     ps2pp.c
     readwrite.c
     registry.c
-    i8042prt.h)
+    i8042prt.h
+    i8042queue.h)
 
 add_library(i8042prt MODULE
     ${SOURCE}

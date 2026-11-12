@@ -12,11 +12,15 @@
 /* INCLUDES ****************************************************************/
 
 #include "i8042prt.h"
+#include "i8042queue.h"
 
 #include <poclass.h>
 #include <ndk/kdfuncs.h>
 
 #include <debug.h>
+
+/* Maximum typematic delay supported, in milliseconds */
+#define KEYBOARD_TYPEMATIC_DELAY_MAXIMUM 1000
 
 /* GLOBALS *******************************************************************/
 
@@ -282,6 +286,10 @@ HandlePowerKeys(
 	PKEYBOARD_INPUT_DATA InputData;
 	ULONG KeyPress;
 
+	/* The DPC is also queued for packet completions, when the buffer is empty */
+	if (DeviceExtension->KeysInBuffer == 0)
+		return FALSE;
+
 	InputData = DeviceExtension->KeyboardBuffer + DeviceExtension->KeysInBuffer - 1;
 	if (!(InputData->Flags & KEY_E0))
 		return FALSE;
@@ -501,9 +509,9 @@ i8042InitializeKeyboardAttributes(
     KeyboardAttributes->KeyRepeatMinimum.UnitId = 0;
     KeyboardAttributes->KeyRepeatMinimum.Rate = (USHORT)Settings->SampleRate;
     KeyboardAttributes->KeyRepeatMinimum.Delay = 0;
-    KeyboardAttributes->KeyRepeatMinimum.UnitId = 0;
-    KeyboardAttributes->KeyRepeatMinimum.Rate = (USHORT)Settings->SampleRate;
-    KeyboardAttributes->KeyRepeatMinimum.Delay = 0;
+    KeyboardAttributes->KeyRepeatMaximum.UnitId = 0;
+    KeyboardAttributes->KeyRepeatMaximum.Rate = (USHORT)Settings->SampleRate;
+    KeyboardAttributes->KeyRepeatMaximum.Delay = KEYBOARD_TYPEMATIC_DELAY_MAXIMUM;
 }
 
 /*
@@ -792,9 +800,9 @@ i8042KbdInterruptService(
 {
 	PI8042_KEYBOARD_EXTENSION DeviceExtension;
 	PPORT_DEVICE_EXTENSION PortDeviceExtension;
-	PKEYBOARD_INPUT_DATA InputData;
 	ULONG Counter;
 	UCHAR PortStatus = 0, Output = 0;
+	USHORT ScanFlags;
 	BOOLEAN ToReturn = FALSE;
 	NTSTATUS Status;
 
@@ -803,7 +811,6 @@ i8042KbdInterruptService(
 	__analysis_assume(Context != NULL);
 	DeviceExtension = Context;
 	PortDeviceExtension = DeviceExtension->Common.PortDeviceExtension;
-	InputData = DeviceExtension->KeyboardBuffer + DeviceExtension->KeysInBuffer;
 	Counter = PortDeviceExtension->Settings.PollStatusIterations;
 
 	while (Counter)
@@ -849,35 +856,35 @@ i8042KbdInterruptService(
 			DeviceExtension->ComboPosition = 0;
 
 		/* Test for TAB + key combination */
-		if (InputData->MakeCode == 0x0F)
-			DeviceExtension->TabPressed = !(InputData->Flags & KEY_BREAK);
+		if ((Output & 0x7f) == 0x0f)
+			DeviceExtension->TabPressed = !(Output & 0x80);
 		else if (DeviceExtension->TabPressed)
 		{
 			DeviceExtension->TabPressed = FALSE;
 
-            /* Check which action to do */
-            if (InputData->MakeCode == 0x25)
-            {
-                /* k - Breakpoint */
-                DbgBreakPointWithStatus(DBG_STATUS_SYSRQ);
-            }
-            else if (InputData->MakeCode == 0x30)
-            {
-                /* b - Bugcheck */
-                KeBugCheck(MANUALLY_INITIATED_CRASH);
-            }
-            else
-            {
-			    /* Send request to the kernel debugger.
-			     * Unknown requests will be ignored. */
-			    KdSystemDebugControl(' soR',
-			                         (PVOID)(ULONG_PTR)InputData->MakeCode,
-			                         0,
-			                         NULL,
-			                         0,
-			                         NULL,
-			                         KernelMode);
-            }
+			/* Check which action to do */
+			if ((Output & 0x7f) == 0x25)
+			{
+				/* k - Breakpoint */
+				DbgBreakPointWithStatus(DBG_STATUS_SYSRQ);
+			}
+			else if ((Output & 0x7f) == 0x30)
+			{
+				/* b - Bugcheck */
+				KeBugCheck(MANUALLY_INITIATED_CRASH);
+			}
+			else
+			{
+				/* Send request to the kernel debugger.
+				 * Unknown requests will be ignored. */
+				KdSystemDebugControl(' soR',
+				                     (PVOID)(ULONG_PTR)(Output & 0x7f),
+				                     0,
+				                     NULL,
+				                     0,
+				                     NULL,
+				                     KernelMode);
+			}
 		}
 	}
 
@@ -912,26 +919,30 @@ i8042KbdInterruptService(
 		}
 	}
 
-	/* Update InputData */
-	InputData->Flags = 0;
+	/* Drop the scan code if there is no room for it in the input queue */
+	ScanFlags = 0;
 	switch (DeviceExtension->KeyboardScanState)
 	{
 		case GotE0:
-			InputData->Flags |= KEY_E0;
+			ScanFlags |= KEY_E0;
 			break;
 		case GotE1:
-			InputData->Flags |= KEY_E1;
+			ScanFlags |= KEY_E1;
 			break;
 		default:
 			break;
 	}
 	DeviceExtension->KeyboardScanState = Normal;
-	if (Output & 0x80)
-		InputData->Flags |= KEY_BREAK;
-	else
-		InputData->Flags |= KEY_MAKE;
-	InputData->MakeCode = Output & 0x7f;
-	InputData->Reserved = 0;
+
+	if (!I8042KbdStoreScanCode(DeviceExtension->KeyboardBuffer,
+	                           PortDeviceExtension->Settings.KeyboardDataQueueSize,
+	                           DeviceExtension->KeysInBuffer,
+	                           Output,
+	                           ScanFlags))
+	{
+		WARN_(I8042PRT, "Keyboard buffer full, dropping scan code 0x%02x\n", Output);
+		return TRUE;
+	}
 
 	DeviceExtension->KeyboardHook.QueueKeyboardPacket(DeviceExtension->KeyboardHook.CallContext);
 
