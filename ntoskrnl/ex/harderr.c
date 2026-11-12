@@ -23,29 +23,31 @@ PEPROCESS ExpDefaultErrorPortProcess = NULL;
 /*++
 * @name ExpSystemErrorHandler
 *
-* For now it's a stub
+* Handles a hard error that could not be handled by an error port.
 *
 * @param ErrorStatus
-*        FILLME
+*        Status code describing the hard error.
 *
 * @param NumberOfParameters
-*        FILLME
+*        Number of valid entries in the Parameters array.
 *
 * @param UnicodeStringParameterMask
-*        FILLME
+*        Mask of the parameters which are Unicode strings.
 *
 * @param Parameters
-*        FILLME
+*        Parameters of the hard error.
 *
-* @param ValidResponseOptions
-*        FILLME
+* @param Shutdown
+*        TRUE if the hard error was raised from user mode, FALSE if it was
+*        raised from kernel mode.
 *
-* @param Response
-*        FILLME
+* @return STATUS_SUCCESS if the hard error was not fatal, otherwise this
+*         function does not return.
 *
-* @return None
-*
-* @remarks None
+* @remarks Only hard errors raised from kernel mode are fatal and cause a
+*          bug check. Hard errors raised from user mode are handled by the
+*          caller, which returns to user mode and lets it terminate the
+*          failing process.
 *
 *--*/
 NTSTATUS
@@ -63,6 +65,19 @@ ExpSystemErrorHandler(IN NTSTATUS ErrorStatus,
     ASSERT(NumberOfParameters <= MAXIMUM_HARDERROR_PARAMETERS);
 
     /*
+     * A hard error raised from user mode must not bring the whole system
+     * down. Return to the caller (ExpRaiseHardError), which either delivers
+     * the error to an error port or returns to user mode, where the
+     * offending process is expected to be terminated by its caller.
+     */
+    if (Shutdown)
+    {
+        DPRINT1("ExpSystemErrorHandler: Unhandled user-mode hard error 0x%08lx\n",
+                ErrorStatus);
+        return STATUS_SUCCESS;
+    }
+
+    /*
      * KeBugCheck expects MAXIMUM_HARDERROR_PARAMETERS parameters,
      * but we might get called with less, so use a local buffer here.
      */
@@ -72,7 +87,7 @@ ExpSystemErrorHandler(IN NTSTATUS ErrorStatus,
         BugCheckParameters[i] = Parameters[i];
     }
 
-    /* FIXME: STUB */
+    /* A hard error raised from kernel mode is fatal */
     KeBugCheckEx(FATAL_UNHANDLED_HARD_ERROR,
                  ErrorStatus,
                  (ULONG_PTR)BugCheckParameters,
