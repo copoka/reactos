@@ -2525,6 +2525,12 @@ static void SpecialChar (RTF_Info *info)
 
 		if (info->pntext)
 		{
+			/* The paragraph mark above is still in the output buffer and
+			 * only reaches the editor on the next flush. That flush calls
+			 * para_split(), which drops the numbering cached on the
+			 * paragraph it terminates. Insert the mark now, so the label
+			 * stored below is not discarded. */
+			RTFFlushOutputBuffer( info );
 			if (info->pntext->nLen && para->fmt.wNumbering)
 			{
 				para_num_clear( &para->para_num );
