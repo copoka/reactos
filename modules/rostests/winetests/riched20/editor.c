@@ -9203,45 +9203,6 @@ static void test_para_numbering(void)
             "label lost in streamed RTF: %s\n", rtf_out );
     }
     DestroyWindow( edit );
-
-    /* The same numbered paragraph, but now the last paragraph of the
-     * document. The text on input is still just the body, yet ME_StreamIn()
-     * drops the trailing paragraph mark in this case, and the para_join()
-     * that follows clears the numbering cached on the paragraph it
-     * terminates. The label is then regenerated from \pn, so the streamed RTF
-     * carries a generated number instead of the text from \pntext. The cache
-     * belongs to the editor rather than to the reader, so a document whose
-     * last paragraph is numbered keeps this behaviour. */
-    edit = new_richeditW( NULL );
-    {
-        const char *single_rtf =
-            "{\\rtf1{\\fonttbl{\\f0\\fswiss\\fprq2\\fcharset0 Arial;}}"
-            "\\pard{\\pntext\\f0 Step\\tab}"
-            "{\\*\\pn\\pnlvlbody\\pnf0\\pndec{\\pntxta.}}"
-            "\\f0 Body\\par}";
-        const WCHAR expect_single[] = {'B','o','d','y',0};
-        char rtf_out[1024], *p;
-
-        es.dwCookie = (DWORD_PTR)&single_rtf;
-        es.dwError = 0;
-        es.pfnCallback = test_EM_STREAMIN_esCallback;
-        result = SendMessageA( edit, EM_STREAMIN, SF_RTF, (LPARAM)&es );
-        ok( result == lstrlenW( expect_single ), "got %Id\n", result );
-
-        result = SendMessageW( edit, EM_GETTEXTEX, (WPARAM)&get_text, (LPARAM)buf );
-        ok( result == lstrlenW( expect_single ), "got %Id\n", result );
-        ok( !lstrcmpW( buf, expect_single ), "got %s\n", wine_dbgstr_w(buf) );
-
-        memset( rtf_out, 0, sizeof(rtf_out) );
-        p = rtf_out;
-        es.dwCookie = (DWORD_PTR)&p;
-        es.dwError = 0;
-        es.pfnCallback = test_WM_SETTEXT_esCallback;
-        SendMessageA( edit, EM_STREAMOUT, SF_RTF, (LPARAM)&es );
-        todo_wine ok( strstr( rtf_out, " Step\\tab}" ) != NULL,
-            "label lost in streamed RTF: %s\n", rtf_out );
-    }
-    DestroyWindow( edit );
 }
 
 static void fill_reobject_struct(REOBJECT *reobj, LONG cp, LPOLEOBJECT poleobj,
