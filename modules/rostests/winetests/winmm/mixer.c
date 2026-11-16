@@ -529,9 +529,9 @@ static void mixer_test_deviceA(int device)
                             controls.pamxctrl = array;
                             controls.cbmxctrl = sizeof(MIXERCONTROLA);
 
-                            /* FIXME: do MIXER_GETLINECONTROLSF_ONEBYID
-                             * and MIXER_GETLINECONTROLSF_ONEBYTYPE
-                             */
+                            /* Note: the ANSI wrapper itself rejects an invalid cbmxctrl, and forces
+                             * cControls to 1 for MIXER_GETLINECONTROLSF_ONEBYTYPE, so the invalid
+                             * parameter handling of the mixer library is tested with the W functions. */
                             rc = mixerGetLineControlsA(mix, &controls, MIXER_GETLINECONTROLSF_ALL);
                             ok(rc==MMSYSERR_NOERROR,
                                "mixerGetLineControlsA(MIXER_GETLINECONTROLSF_ALL): "
@@ -557,6 +557,16 @@ static void mixer_test_deviceA(int device)
 
                                     mixer_test_controlA(mix, &array[nc]);
                                 }
+
+                                /* a wrong control count with a valid control id */
+                                controls.cControls = 2;
+                                controls.dwControlID = array[0].dwControlID;
+                                rc = mixerGetLineControlsA(mix, &controls, MIXER_GETLINECONTROLSF_ONEBYID);
+                                ok(rc==MMSYSERR_INVALPARAM,
+                                   "mixerGetLineControlsA(MIXER_GETLINECONTROLSF_ONEBYID): "
+                                   "MMSYSERR_INVALPARAM expected, got %s\n",
+                                   mmsys_error(rc));
+                                controls.cControls = mixerlineA.cControls;
                             }
 
                             HeapFree(GetProcessHeap(),0,array);
@@ -921,15 +931,43 @@ static void mixer_test_deviceW(int device)
                                "MMSYSERR_INVALFLAG or MMSYSERR_INVALPARAM expected, got %s\n",
                                mmsys_error(rc));
 
+                            memset(&controls, 0, sizeof(controls));
                             controls.cbStruct = sizeof(MIXERLINECONTROLSW);
                             controls.cControls = mixerlineW.cControls;
                             controls.dwLineID = mixerlineW.dwLineID;
                             controls.pamxctrl = array;
                             controls.cbmxctrl = sizeof(MIXERCONTROLW);
 
-                            /* FIXME: do MIXER_GETLINECONTROLSF_ONEBYID
-                             * and MIXER_GETLINECONTROLSF_ONEBYTYPE
-                             */
+                            /* invalid parameters are rejected with
+                             * MMSYSERR_INVALPARAM, no control lookup needed */
+                            controls.cControls = 2;
+                            rc = mixerGetLineControlsW(mix, &controls, MIXER_GETLINECONTROLSF_ONEBYTYPE);
+                            ok(rc==MMSYSERR_INVALPARAM,
+                               "mixerGetLineControlsW(MIXER_GETLINECONTROLSF_ONEBYTYPE): "
+                               "MMSYSERR_INVALPARAM expected, got %s\n",
+                               mmsys_error(rc));
+
+                            controls.cControls = 1;
+                            controls.pamxctrl = NULL;
+                            rc = mixerGetLineControlsW(mix, &controls, MIXER_GETLINECONTROLSF_ONEBYTYPE);
+                            ok(rc==MMSYSERR_INVALPARAM,
+                               "mixerGetLineControlsW(MIXER_GETLINECONTROLSF_ONEBYTYPE): "
+                               "MMSYSERR_INVALPARAM expected, got %s\n",
+                               mmsys_error(rc));
+
+                            controls.pamxctrl = array;
+                            controls.cbmxctrl = sizeof(MIXERCONTROLW) - 1;
+                            rc = mixerGetLineControlsW(mix, &controls, MIXER_GETLINECONTROLSF_ONEBYTYPE);
+                            ok(rc==MMSYSERR_INVALPARAM,
+                               "mixerGetLineControlsW(MIXER_GETLINECONTROLSF_ONEBYTYPE): "
+                               "MMSYSERR_INVALPARAM expected, got %s\n",
+                               mmsys_error(rc));
+
+                            /* restore the fields for the call below */
+                            controls.cControls = mixerlineW.cControls;
+                            controls.cbmxctrl = sizeof(MIXERCONTROLW);
+                            controls.pamxctrl = array;
+
                             rc = mixerGetLineControlsW(mix, &controls, MIXER_GETLINECONTROLSF_ALL);
                             ok(rc==MMSYSERR_NOERROR,
                                "mixerGetLineControlsW(MIXER_GETLINECONTROLSF_ALL): "
@@ -959,6 +997,16 @@ static void mixer_test_deviceW(int device)
                                     }
                                     mixer_test_controlW(mix, &array[nc]);
                                 }
+
+                                /* a wrong control count with a valid control id */
+                                controls.cControls = 2;
+                                controls.dwControlID = array[0].dwControlID;
+                                rc = mixerGetLineControlsW(mix, &controls, MIXER_GETLINECONTROLSF_ONEBYID);
+                                ok(rc==MMSYSERR_INVALPARAM,
+                                   "mixerGetLineControlsW(MIXER_GETLINECONTROLSF_ONEBYID): "
+                                   "MMSYSERR_INVALPARAM expected, got %s\n",
+                                   mmsys_error(rc));
+                                controls.cControls = mixerlineW.cControls;
                             }
 
                             HeapFree(GetProcessHeap(),0,array);
