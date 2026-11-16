@@ -416,8 +416,14 @@ WdmAudGetLineControls(
     IN LPMIXERLINECONTROLSW MixControls,
     IN ULONG Flags)
 {
-    if (MMixerGetLineControls(&MixerContext, hMixer, MixerId, Flags, MixControls) == MM_STATUS_SUCCESS)
+    MIXER_STATUS Status;
+
+    Status = MMixerGetLineControls(&MixerContext, hMixer, MixerId, Flags, MixControls);
+    if (Status == MM_STATUS_SUCCESS)
         return MMSYSERR_NOERROR;
+
+    if (Status == MM_STATUS_INVALID_PARAMETER)
+        return MMSYSERR_INVALPARAM;
 
     return MMSYSERR_ERROR;
 }
