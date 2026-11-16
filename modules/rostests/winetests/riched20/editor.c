@@ -9160,15 +9160,18 @@ static void test_para_numbering(void)
     /* \pntext without \pnindent keeps its label as the cached number and
      * falls back to the default numbering tab. The label is neither part of
      * the document text nor regenerated from \pn when the document is
-     * streamed back out. */
+     * streamed back out. The numbered paragraph is followed by a plain one:
+     * ME_StreamIn() strips the final paragraph mark, and the split that this
+     * causes would otherwise discard the label of the last paragraph. */
     edit = new_richeditW( NULL );
     {
         const char *label_rtf =
             "{\\rtf1{\\fonttbl{\\f0\\fswiss\\fprq2\\fcharset0 Arial;}}"
             "\\pard{\\pntext\\f0 Step\\tab}"
             "{\\*\\pn\\pnlvlbody\\pnf0\\pndec{\\pntxta.}}"
-            "\\f0 Body\\par}";
-        const WCHAR expect_label[] = {'B','o','d','y',0};
+            "\\f0 Body\\par"
+            "\\pard\\f0 Tail\\par}";
+        const WCHAR expect_label[] = {'B','o','d','y','\r','T','a','i','l',0};
         char rtf_out[1024], *p;
 
         es.dwCookie = (DWORD_PTR)&label_rtf;
@@ -9197,6 +9200,45 @@ static void test_para_numbering(void)
         es.pfnCallback = test_WM_SETTEXT_esCallback;
         SendMessageA( edit, EM_STREAMOUT, SF_RTF, (LPARAM)&es );
         ok( strstr( rtf_out, " Step\\tab}" ) != NULL,
+            "label lost in streamed RTF: %s\n", rtf_out );
+    }
+    DestroyWindow( edit );
+
+    /* The same numbered paragraph, but now the last paragraph of the
+     * document. The text on input is still just the body, yet ME_StreamIn()
+     * drops the trailing paragraph mark in this case, and the para_join()
+     * that follows clears the numbering cached on the paragraph it
+     * terminates. The label is then regenerated from \pn, so the streamed RTF
+     * carries a generated number instead of the text from \pntext. The cache
+     * belongs to the editor rather than to the reader, so a document whose
+     * last paragraph is numbered keeps this behaviour. */
+    edit = new_richeditW( NULL );
+    {
+        const char *single_rtf =
+            "{\\rtf1{\\fonttbl{\\f0\\fswiss\\fprq2\\fcharset0 Arial;}}"
+            "\\pard{\\pntext\\f0 Step\\tab}"
+            "{\\*\\pn\\pnlvlbody\\pnf0\\pndec{\\pntxta.}}"
+            "\\f0 Body\\par}";
+        const WCHAR expect_single[] = {'B','o','d','y',0};
+        char rtf_out[1024], *p;
+
+        es.dwCookie = (DWORD_PTR)&single_rtf;
+        es.dwError = 0;
+        es.pfnCallback = test_EM_STREAMIN_esCallback;
+        result = SendMessageA( edit, EM_STREAMIN, SF_RTF, (LPARAM)&es );
+        ok( result == lstrlenW( expect_single ), "got %Id\n", result );
+
+        result = SendMessageW( edit, EM_GETTEXTEX, (WPARAM)&get_text, (LPARAM)buf );
+        ok( result == lstrlenW( expect_single ), "got %Id\n", result );
+        ok( !lstrcmpW( buf, expect_single ), "got %s\n", wine_dbgstr_w(buf) );
+
+        memset( rtf_out, 0, sizeof(rtf_out) );
+        p = rtf_out;
+        es.dwCookie = (DWORD_PTR)&p;
+        es.dwError = 0;
+        es.pfnCallback = test_WM_SETTEXT_esCallback;
+        SendMessageA( edit, EM_STREAMOUT, SF_RTF, (LPARAM)&es );
+        todo_wine ok( strstr( rtf_out, " Step\\tab}" ) != NULL,
             "label lost in streamed RTF: %s\n", rtf_out );
     }
     DestroyWindow( edit );
