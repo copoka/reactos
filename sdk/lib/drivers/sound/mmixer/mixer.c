@@ -438,9 +438,14 @@ MMixerGetLineControls(
         }
 
         /* sanity checks */
-        ASSERT(MixerLineControls->cControls == 1);
-        ASSERT(MixerLineControls->cbmxctrl == sizeof(MIXERCONTROLW));
-        ASSERT(MixerLineControls->pamxctrl != NULL);
+        if ((MixerLineControls->cControls != 1) ||
+            (MixerLineControls->cbmxctrl != sizeof(MIXERCONTROLW)) ||
+            (MixerLineControls->pamxctrl == NULL))
+        {
+            /* invalid parameter */
+            DPRINT1("Invalid line controls parameters\n");
+            return MM_STATUS_INVALID_PARAMETER;
+        }
 
         Entry = MixerLineSrc->ControlsList.Flink;
         while(Entry != &MixerLineSrc->ControlsList)
@@ -465,6 +470,16 @@ MMixerGetLineControls(
         /* cast to mixer info */
         MixerInfo = (LPMIXER_INFO)MixerHandle;
 
+        /* sanity checks */
+        if ((MixerLineControls->cControls != 1) ||
+            (MixerLineControls->cbmxctrl != sizeof(MIXERCONTROLW)) ||
+            (MixerLineControls->pamxctrl == NULL))
+        {
+            /* invalid parameter */
+            DPRINT1("Invalid line controls parameters\n");
+            return MM_STATUS_INVALID_PARAMETER;
+        }
+
         Status = MMixerGetMixerControlById(MixerInfo, MixerLineControls->dwControlID, NULL, &MixerControl, NULL);
 
         if (Status != MM_STATUS_SUCCESS)
@@ -473,10 +488,6 @@ MMixerGetLineControls(
             DPRINT("MMixerGetLineControls ControlID not found %lx\n", MixerLineControls->dwLineID);
             return MM_STATUS_INVALID_PARAMETER;
         }
-
-        ASSERT(MixerLineControls->cControls == 1);
-        ASSERT(MixerLineControls->cbmxctrl == sizeof(MIXERCONTROLW));
-        ASSERT(MixerLineControls->pamxctrl != NULL);
 
        DPRINT("MMixerGetLineControls ControlID %lx ControlType %lx Name %S\n", MixerControl->Control.dwControlID, MixerControl->Control.dwControlType, MixerControl->Control.szName);
 
