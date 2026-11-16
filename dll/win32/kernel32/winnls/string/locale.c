@@ -5231,6 +5231,22 @@ typedef struct
   DWORD    dwFlags;
 } ENUMSYSTEMCODEPAGES_CALLBACKS;
 
+/* Value names in the NLS\CodePage key are decimal numbers; Windows does not
+ * enumerate the pseudo entries (ACP, OEMCP, MACCP, ...) stored next to them. */
+static BOOL NLS_IsCodePageNumber(LPCWSTR szValueName)
+{
+    if (!szValueName || !*szValueName)
+        return FALSE;
+
+    for (; *szValueName; szValueName++)
+    {
+        if (*szValueName < L'0' || *szValueName > L'9')
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 /* Internal implementation of EnumSystemCodePagesA/W */
 static BOOL NLS_EnumSystemCodePages(ENUMSYSTEMCODEPAGES_CALLBACKS *lpProcs)
 {
@@ -5238,6 +5254,7 @@ static BOOL NLS_EnumSystemCodePages(ENUMSYSTEMCODEPAGES_CALLBACKS *lpProcs)
     HANDLE hKey;
     BOOL bContinue = TRUE;
     ULONG ulIndex = 0;
+    DWORD dwFlags;
 
     if (!lpProcs)
     {
@@ -5245,8 +5262,12 @@ static BOOL NLS_EnumSystemCodePages(ENUMSYSTEMCODEPAGES_CALLBACKS *lpProcs)
         return FALSE;
     }
 
-    switch (lpProcs->dwFlags)
+    dwFlags = lpProcs->dwFlags;
+    switch (dwFlags)
     {
+        case 0: /* Windows treats 0 as CP_SUPPORTED */
+            dwFlags = CP_SUPPORTED;
+            break;
         case CP_INSTALLED:
         case CP_SUPPORTED:
             break;
@@ -5267,8 +5288,9 @@ static BOOL NLS_EnumSystemCodePages(ENUMSYSTEMCODEPAGES_CALLBACKS *lpProcs)
         if (NLS_RegEnumValue(hKey, ulIndex, szNumber, sizeof(szNumber),
                              szValue, sizeof(szValue)))
         {
-            if ((lpProcs->dwFlags == CP_SUPPORTED)||
-                ((lpProcs->dwFlags == CP_INSTALLED)&&(wcslen(szValue) > 2)))
+            if (NLS_IsCodePageNumber(szNumber) &&
+                ((dwFlags == CP_SUPPORTED) ||
+                 ((dwFlags == CP_INSTALLED) && (wcslen(szValue) > 2))))
             {
                 if (lpProcs->procW)
                 {
