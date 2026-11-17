@@ -1971,6 +1971,132 @@ RtlpSplitEntry(PHEAP Heap,
     return InUseEntry;
 }
 
+/*
+ * Returns the tag table entry for the given tag index, or NULL if the index
+ * does not describe a tag of this heap. Index 0 means "no tag", and pseudo
+ * tags are not kept in the tag table.
+ */
+static
+PHEAP_TAG_ENTRY
+RtlpGetTagEntry(PHEAP Heap,
+                USHORT TagIndex)
+{
+    if (!TagIndex ||
+        (TagIndex & HEAP_PSEUDO_TAG_FLAG) ||
+        (TagIndex >= Heap->MaximumTagIndex) ||
+        !Heap->TagEntries)
+    {
+        return NULL;
+    }
+
+    return &Heap->TagEntries[TagIndex];
+}
+
+/*
+ * Returns the number of bytes a block is accounted with to its tag.
+ * Virtual blocks are accounted with their commit size, so that allocating
+ * and freeing a block always use the very same number.
+ */
+static
+SIZE_T
+RtlpGetTaggedBlockSize(PHEAP_ENTRY Entry)
+{
+    PHEAP_VIRTUAL_ALLOC_ENTRY VirtualEntry;
+
+    if (Entry->Flags & HEAP_ENTRY_VIRTUAL_ALLOC)
+    {
+        VirtualEntry = CONTAINING_RECORD(Entry, HEAP_VIRTUAL_ALLOC_ENTRY, BusyBlock);
+        return VirtualEntry->CommitSize;
+    }
+
+    return (SIZE_T)Entry->Size << HEAP_ENTRY_SHIFT;
+}
+
+/*
+ * Accounts an allocation to the tag stored in the block header. Blocks
+ * without a tag return early, so they never wait for the heap lock.
+ */
+static
+VOID
+RtlpAccountTagAllocation(PHEAP Heap,
+                         PHEAP_ENTRY Entry)
+{
+    PHEAP_ENTRY_EXTRA Extra;
+    PHEAP_TAG_ENTRY TagEntry;
+
+    if (!(Entry->Flags & HEAP_ENTRY_EXTRA_PRESENT))
+        return;
+
+    Extra = RtlpGetExtraStuffPointer(Entry);
+    if (!Extra->TagIndex)
+        return;
+
+    RtlLockHeap(Heap);
+
+    TagEntry = RtlpGetTagEntry(Heap, Extra->TagIndex);
+    if (TagEntry)
+    {
+        TagEntry->Allocs++;
+        TagEntry->Size += (ULONG)RtlpGetTaggedBlockSize(Entry);
+    }
+
+    RtlUnlockHeap(Heap);
+}
+
+/*
+ * Accounts a freed block to its tag. BlockSize is the size of the block
+ * before it is coalesced with its neighbours.
+ */
+static
+VOID
+RtlpAccountTagFree(PHEAP Heap,
+                   USHORT TagIndex,
+                   SIZE_T BlockSize)
+{
+    PHEAP_TAG_ENTRY TagEntry;
+
+    if (!TagIndex)
+        return;
+
+    RtlLockHeap(Heap);
+
+    TagEntry = RtlpGetTagEntry(Heap, TagIndex);
+    if (TagEntry)
+    {
+        TagEntry->Frees++;
+        TagEntry->Size -= (ULONG)BlockSize;
+    }
+
+    RtlUnlockHeap(Heap);
+}
+
+/*
+ * Keeps the size of the tag in sync with a block which was resized in place.
+ */
+static
+VOID
+RtlpAccountTagResize(PHEAP Heap,
+                     USHORT TagIndex,
+                     SIZE_T OldBlockSize,
+                     SIZE_T NewBlockSize)
+{
+    PHEAP_TAG_ENTRY TagEntry;
+
+    if (!TagIndex)
+        return;
+
+    RtlLockHeap(Heap);
+
+    TagEntry = RtlpGetTagEntry(Heap, TagIndex);
+    if (TagEntry)
+    {
+        TagEntry->Size -= (ULONG)OldBlockSize;
+        TagEntry->Size += (ULONG)NewBlockSize;
+    }
+
+    RtlUnlockHeap(Heap);
+}
+
 static
 PVOID
 RtlpAllocateNonDedicated(PHEAP Heap,
@@ -2025,7 +2151,11 @@ RtlpAllocateNonDedicated(PHEAP Heap,
             Extra = RtlpGetExtraStuffPointer(InUseEntry);
             RtlZeroMemory(Extra, sizeof(HEAP_ENTRY_EXTRA));
 
-            // TODO: Tagging
+            /* Remember the tag the caller asked for */
+            Extra->TagIndex = (USHORT)((Flags & HEAP_TAG_MASK) >> HEAP_TAG_SHIFT);
+
+            /* Account the block to its tag, if it has one */
+            RtlpAccountTagAllocation(Heap, InUseEntry);
         }
 
         /* Return pointer to the */
@@ -2084,10 +2214,6 @@ RtlAllocateHeap(IN PVOID HeapPtr,
     /* Call special heap */
     if (RtlpHeapIsSpecial(Flags))
         return RtlDebugAllocateHeap(Heap, Flags, Size);
-
-    /* Tag counters are not maintained, ignore any tag in the flags.
-       Tag bits overlap with the special heap flags, so masked only here. */
-    Flags &= ~HEAP_TAG_MASK;
 
     /* Check for the maximum size */
     if (Size >= 0x80000000)
@@ -2211,7 +2337,11 @@ RtlAllocateHeap(IN PVOID HeapPtr,
             Extra = RtlpGetExtraStuffPointer(InUseEntry);
             RtlZeroMemory(Extra, sizeof(HEAP_ENTRY_EXTRA));
 
-            // TODO: Tagging
+            /* Remember the tag the caller asked for */
+            Extra->TagIndex = (USHORT)((Flags & HEAP_TAG_MASK) >> HEAP_TAG_SHIFT);
+
+            /* Account the block to its tag, if it has one */
+            RtlpAccountTagAllocation(Heap, InUseEntry);
         }
 
         /* User data starts right after the entry's header */
@@ -2245,12 +2375,16 @@ RtlAllocateHeap(IN PVOID HeapPtr,
         VirtualBlock->BusyBlock.Flags = EntryFlags | HEAP_ENTRY_VIRTUAL_ALLOC | HEAP_ENTRY_EXTRA_PRESENT;
         VirtualBlock->CommitSize = AllocationSize;
         VirtualBlock->ReserveSize = AllocationSize;
+        VirtualBlock->ExtraStuff.TagIndex = (USHORT)((Flags & HEAP_TAG_MASK) >> HEAP_TAG_SHIFT);
 
         /* Insert it into the list of virtual allocations */
         InsertTailList(&Heap->VirtualAllocdBlocks, &VirtualBlock->Entry);
 
         /* Release the lock */
         if (HeapLocked) RtlLeaveHeapLock(Heap->LockVariable);
+
+        /* Account the block to its tag, if it has one */
+        RtlpAccountTagAllocation(Heap, &VirtualBlock->BusyBlock);
 
         /* Return pointer to user data */
         return VirtualBlock + 1;
@@ -2295,6 +2429,7 @@ BOOLEAN NTAPI RtlFreeHeap(
 {
     PHEAP Heap;
     PHEAP_ENTRY HeapEntry;
+    PHEAP_ENTRY_EXTRA Extra;
     USHORT TagIndex = 0;
     SIZE_T BlockSize;
     PHEAP_VIRTUAL_ALLOC_ENTRY VirtualEntry;
@@ -2311,10 +2446,6 @@ BOOLEAN NTAPI RtlFreeHeap(
     /* Call special heap */
     if (RtlpHeapIsSpecial(Flags))
         return RtlDebugFreeHeap(Heap, Flags, Ptr);
-
-    /* Tag counters are not maintained, ignore any tag in the flags.
-       Tag bits overlap with the special heap flags, so masked only here. */
-    Flags &= ~HEAP_TAG_MASK;
 
     /* Get pointer to the heap entry */
     HeapEntry = (PHEAP_ENTRY)Ptr - 1;
@@ -2349,6 +2480,14 @@ BOOLEAN NTAPI RtlFreeHeap(
         Locked = TRUE;
     }
 
+    /* The tag of the block is authoritative, the one passed by the caller is
+       not used: a block is always accounted to the tag it was allocated with */
+    if (HeapEntry->Flags & HEAP_ENTRY_EXTRA_PRESENT)
+    {
+        Extra = RtlpGetExtraStuffPointer(HeapEntry);
+        TagIndex = Extra->TagIndex;
+    }
+
     if (HeapEntry->Flags & HEAP_ENTRY_VIRTUAL_ALLOC)
     {
         /* Big allocation */
@@ -2357,7 +2496,8 @@ BOOLEAN NTAPI RtlFreeHeap(
         /* Remove it from the list */
         RemoveEntryList(&VirtualEntry->Entry);
 
-        // TODO: Tagging
+        /* Account the block to its tag before the memory is released */
+        RtlpAccountTagFree(Heap, TagIndex, RtlpGetTaggedBlockSize(HeapEntry));
 
         BlockSize = 0;
         Status = ZwFreeVirtualMemory(NtCurrentProcess(),
@@ -2377,7 +2517,8 @@ BOOLEAN NTAPI RtlFreeHeap(
         /* Normal allocation */
         BlockSize = HeapEntry->Size;
 
-        // TODO: Tagging
+        /* Account the block to its tag before coalescing changes its size */
+        RtlpAccountTagFree(Heap, TagIndex, RtlpGetTaggedBlockSize(HeapEntry));
 
         /* Coalesce in kernel mode, and in usermode if it's not disabled */
         if (RtlpGetMode() == KernelMode ||
@@ -2399,13 +2540,6 @@ BOOLEAN NTAPI RtlFreeHeap(
         {
             /* Insert into the free list */
             RtlpInsertFreeBlock(Heap, (PHEAP_FREE_ENTRY)HeapEntry, BlockSize);
-
-            if (RtlpGetMode() == UserMode &&
-                TagIndex != 0)
-            {
-                // FIXME: Tagging
-                UNIMPLEMENTED;
-            }
         }
     }
 
@@ -2508,7 +2642,11 @@ RtlpGrowBlockInPlace (IN PHEAP Heap,
         /* Copy contents */
         *NewExtra = *OldExtra;
 
-        // FIXME Tagging
+        /* Keep the size of the tag in sync with the new size of the block */
+        RtlpAccountTagResize(Heap,
+                             NewExtra->TagIndex,
+                             (SIZE_T)InUseEntry->Size << HEAP_ENTRY_SHIFT,
+                             (SIZE_T)Index << HEAP_ENTRY_SHIFT);
     }
 
     /* Update sizes */
@@ -2726,10 +2864,6 @@ RtlReAllocateHeap(HANDLE HeapPtr,
     if (RtlpHeapIsSpecial(Flags))
         return RtlDebugReAllocateHeap(Heap, Flags, Ptr, Size);
 
-    /* Tag counters are not maintained, ignore any tag in the flags.
-       Tag bits overlap with the special heap flags, so masked only here. */
-    Flags &= ~HEAP_TAG_MASK;
-
     /* Make sure size is valid */
     if (Size >= 0x80000000)
     {
@@ -2822,14 +2956,11 @@ RtlReAllocateHeap(HANDLE HeapPtr,
             NewExtra = (PHEAP_ENTRY_EXTRA)(InUseEntry + Index - 1);
             *NewExtra = *OldExtra;
 
-            // FIXME Tagging, TagIndex
-
             /* Update unused bytes count */
             InUseEntry->UnusedBytes = (UCHAR)(AllocationSize - Size);
         }
         else
         {
-            // FIXME Tagging, SmallTagIndex
             InUseEntry->UnusedBytes = (UCHAR)(AllocationSize - Size);
         }
 
@@ -2883,8 +3014,6 @@ RtlReAllocateHeap(HANDLE HeapPtr,
             {
                 /* This is a virtual block allocation */
                 VirtualAllocBlock = CONTAINING_RECORD(InUseEntry, HEAP_VIRTUAL_ALLOC_ENTRY, BusyBlock);
-
-                // FIXME Tagging!
 
                 DecommitBase = (PCHAR)VirtualAllocBlock + AllocationSize;
                 DecommitSize = (OldIndex << HEAP_ENTRY_SHIFT) - AllocationSize;
@@ -2994,6 +3123,16 @@ RtlReAllocateHeap(HANDLE HeapPtr,
                 }
             }
         }
+
+        /* Keep the size of the tag in sync with the new size of the block */
+        if (InUseEntry->Flags & HEAP_ENTRY_EXTRA_PRESENT)
+        {
+            NewExtra = RtlpGetExtraStuffPointer(InUseEntry);
+            RtlpAccountTagResize(Heap,
+                                 NewExtra->TagIndex,
+                                 (SIZE_T)OldIndex << HEAP_ENTRY_SHIFT,
+                                 RtlpGetTaggedBlockSize(InUseEntry));
+        }
     }
     else
     {
@@ -3009,9 +3148,6 @@ RtlReAllocateHeap(HANDLE HeapPtr,
             }
             else
             {
-                /* Clear tag bits */
-                Flags &= ~HEAP_TAG_MASK;
-
                 /* Process extra stuff */
                 if (InUseEntry->Flags & HEAP_ENTRY_EXTRA_PRESENT)
                 {
@@ -3023,16 +3159,20 @@ RtlReAllocateHeap(HANDLE HeapPtr,
                     /* Get pointer to the old extra data */
                     OldExtra = RtlpGetExtraStuffPointer(InUseEntry);
 
-                    /* Save tag index if it was set */
+                    /* Save tag index if it was set, it wins over the tag which
+                       the caller passed, because the block is accounted to it */
                     if (OldExtra->TagIndex &&
                         !(OldExtra->TagIndex & HEAP_PSEUDO_TAG_FLAG))
                     {
+                        Flags &= ~HEAP_TAG_MASK;
                         Flags |= OldExtra->TagIndex << HEAP_TAG_SHIFT;
                     }
                 }
                 else if (InUseEntry->SmallTagIndex)
                 {
-                    /* Take small tag index into account */
+                    /* Take small tag index into account, it wins over the tag
+                       which the caller passed */
+                    Flags &= ~HEAP_TAG_MASK;
                     Flags |= InUseEntry->SmallTagIndex << HEAP_TAG_SHIFT;
                 }
 
