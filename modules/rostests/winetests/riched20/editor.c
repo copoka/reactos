@@ -9069,6 +9069,140 @@ static void test_para_numbering(void)
     ok( cf.yHeight == 200, "got %ld\n", cf.yHeight );
 
     DestroyWindow( edit );
+
+    /* \pn without \pntext should not produce a visible number: native
+     * richedit treats \pntext as the authoritative label, so its absence
+     * suppresses auto-numbering entirely. */
+    edit = new_richeditW( NULL );
+    {
+        const char *no_pntext =
+            "{\\rtf1{\\fonttbl{\\f0\\fswiss\\fprq2\\fcharset0 Arial;}}"
+            "\\pard{\\*\\pn\\pnlvlbody\\pnf0\\pnindent1000\\pnstart1\\pndec{\\pntxta.}}"
+            "\\f0 Alpha\\par "
+            "Beta\\par}";
+        const WCHAR expect_no_pntext[] = {'A','l','p','h','a','\r','B','e','t','a',0};
+
+        es.dwCookie = (DWORD_PTR)&no_pntext;
+        es.dwError = 0;
+        es.pfnCallback = test_EM_STREAMIN_esCallback;
+        result = SendMessageA( edit, EM_STREAMIN, SF_RTF, (LPARAM)&es );
+        ok( result == lstrlenW( expect_no_pntext ), "got %Id\n", result );
+
+        result = SendMessageW( edit, EM_GETTEXTEX, (WPARAM)&get_text, (LPARAM)buf );
+        ok( result == lstrlenW( expect_no_pntext ), "got %Id\n", result );
+        ok( !lstrcmpW( buf, expect_no_pntext ), "got %s\n", wine_dbgstr_w(buf) );
+
+        SendMessageW( edit, EM_SETSEL, 0, 0 );
+        memset( &fmt, 0, sizeof(fmt) );
+        fmt.cbSize = sizeof(fmt);
+        fmt.dwMask = PFM_ALL2;
+        SendMessageW( edit, EM_GETPARAFORMAT, 0, (LPARAM)&fmt );
+        ok( fmt.wNumbering == 0, "got %d\n", fmt.wNumbering );
+    }
+    DestroyWindow( edit );
+
+    /* \pntext containing \bullet:
+     * the bullet character is the label and must not appear in EM_GETTEXT. */
+    edit = new_richeditW( NULL );
+    {
+        const char *bullet_rtf =
+            "{\\rtf1{\\fonttbl{\\f0\\fswiss\\fprq2\\fcharset0 Arial;}"
+            "{\\f1\\fnil\\fcharset2 Symbol;}}"
+            "\\pard{\\pntext\\f1\\'b7\\tab}"
+            "{\\*\\pn\\pnlvlblt\\pnf1\\pnindent1000{\\pntxtb\\bullet}}"
+            "\\f0 Item one\\par"
+            "{\\pntext\\f1\\bullet\\tab}\\f0 Item two\\par}";
+        const WCHAR expect_bullet[] = {'I','t','e','m',' ','o','n','e','\r',
+                                        'I','t','e','m',' ','t','w','o',0};
+
+        es.dwCookie = (DWORD_PTR)&bullet_rtf;
+        es.dwError = 0;
+        es.pfnCallback = test_EM_STREAMIN_esCallback;
+        result = SendMessageA( edit, EM_STREAMIN, SF_RTF, (LPARAM)&es );
+        ok( result == lstrlenW( expect_bullet ), "got %Id\n", result );
+
+        result = SendMessageW( edit, EM_GETTEXTEX, (WPARAM)&get_text, (LPARAM)buf );
+        ok( result == lstrlenW( expect_bullet ), "got %Id\n", result );
+        ok( !lstrcmpW( buf, expect_bullet ), "got %s\n", wine_dbgstr_w(buf) );
+
+        SendMessageW( edit, EM_SETSEL, 1, 1 );
+        memset( &fmt, 0, sizeof(fmt) );
+        fmt.cbSize = sizeof(fmt);
+        fmt.dwMask = PFM_ALL2;
+        SendMessageW( edit, EM_GETPARAFORMAT, 0, (LPARAM)&fmt );
+        ok( fmt.wNumbering == PFN_BULLET, "got %d\n", fmt.wNumbering );
+    }
+    DestroyWindow( edit );
+
+    /* The trailing \tab inside \pntext is the label/body separator and
+     * should not be present in the document text. */
+    edit = new_richeditW( NULL );
+    {
+        const char *tab_rtf =
+            "{\\rtf1{\\fonttbl{\\f0\\fswiss\\fprq2\\fcharset0 Arial;}}"
+            "\\pard{\\pntext\\f0 1.\\tab}"
+            "{\\*\\pn\\pnlvlbody\\pnf0\\pnindent1000\\pnstart1\\pndec{\\pntxta.}}"
+            "\\f0 Hello\\par}";
+        const WCHAR expect_tab[] = {'H','e','l','l','o',0};
+
+        es.dwCookie = (DWORD_PTR)&tab_rtf;
+        es.dwError = 0;
+        es.pfnCallback = test_EM_STREAMIN_esCallback;
+        result = SendMessageA( edit, EM_STREAMIN, SF_RTF, (LPARAM)&es );
+        ok( result == lstrlenW( expect_tab ), "got %Id\n", result );
+
+        result = SendMessageW( edit, EM_GETTEXTEX, (WPARAM)&get_text, (LPARAM)buf );
+        ok( result == lstrlenW( expect_tab ), "got %Id\n", result );
+        ok( !lstrcmpW( buf, expect_tab ), "got %s\n", wine_dbgstr_w(buf) );
+    }
+    DestroyWindow( edit );
+
+    /* \pntext without \pnindent keeps its label as the cached number and
+     * falls back to the default numbering tab. The label is neither part of
+     * the document text nor regenerated from \pn when the document is
+     * streamed back out. The numbered paragraph is followed by a plain one:
+     * ME_StreamIn() strips the final paragraph mark, and the split that this
+     * causes would otherwise discard the label of the last paragraph. */
+    edit = new_richeditW( NULL );
+    {
+        const char *label_rtf =
+            "{\\rtf1{\\fonttbl{\\f0\\fswiss\\fprq2\\fcharset0 Arial;}}"
+            "\\pard{\\pntext\\f0 Step\\tab}"
+            "{\\*\\pn\\pnlvlbody\\pnf0\\pndec{\\pntxta.}}"
+            "\\f0 Body\\par"
+            "\\pard\\f0 Tail\\par}";
+        const WCHAR expect_label[] = {'B','o','d','y','\r','T','a','i','l',0};
+        char rtf_out[1024], *p;
+
+        es.dwCookie = (DWORD_PTR)&label_rtf;
+        es.dwError = 0;
+        es.pfnCallback = test_EM_STREAMIN_esCallback;
+        result = SendMessageA( edit, EM_STREAMIN, SF_RTF, (LPARAM)&es );
+        ok( result == lstrlenW( expect_label ), "got %Id\n", result );
+
+        result = SendMessageW( edit, EM_GETTEXTEX, (WPARAM)&get_text, (LPARAM)buf );
+        ok( result == lstrlenW( expect_label ), "got %Id\n", result );
+        ok( !lstrcmpW( buf, expect_label ), "got %s\n", wine_dbgstr_w(buf) );
+
+        SendMessageW( edit, EM_SETSEL, 0, 0 );
+        memset( &fmt, 0, sizeof(fmt) );
+        fmt.cbSize = sizeof(fmt);
+        fmt.dwMask = PFM_ALL2;
+        SendMessageW( edit, EM_GETPARAFORMAT, 0, (LPARAM)&fmt );
+        ok( (fmt.dwMask & PFM_NUMBERINGTAB) && fmt.wNumberingTab == 720,
+            "got %04x %d\n", fmt.dwMask, fmt.wNumberingTab );
+
+        /* Losing the label would make the writer regenerate "1." from \pn. */
+        memset( rtf_out, 0, sizeof(rtf_out) );
+        p = rtf_out;
+        es.dwCookie = (DWORD_PTR)&p;
+        es.dwError = 0;
+        es.pfnCallback = test_WM_SETTEXT_esCallback;
+        SendMessageA( edit, EM_STREAMOUT, SF_RTF, (LPARAM)&es );
+        ok( strstr( rtf_out, " Step\\tab}" ) != NULL,
+            "label lost in streamed RTF: %s\n", rtf_out );
+    }
+    DestroyWindow( edit );
 }
 
 static void fill_reobject_struct(REOBJECT *reobj, LONG cp, LPOLEOBJECT poleobj,
