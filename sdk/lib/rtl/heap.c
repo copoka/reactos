@@ -2264,7 +2264,12 @@ RtlAllocateHeap(IN PVOID HeapPtr,
         return NULL;
     }
 
-    if (Flags & (HEAP_CREATE_ENABLE_TRACING))
+    /* Bits of a tag overlap with the heap flags: at HEAP_TAG_SHIFT 16 the
+     * index 2 is exactly HEAP_CREATE_ENABLE_TRACING, and a tag is not a
+     * caller mistake. Only the bits which cannot belong to a tag are
+     * checked, so with that shift a real tracing request is not reported
+     * either. */
+    if ((Flags & ~HEAP_TAG_MASK) & HEAP_CREATE_ENABLE_TRACING)
     {
         DPRINT1("HEAP: RtlAllocateHeap is called with unsupported flags %x, ignoring\n", Flags);
     }
