@@ -15,8 +15,11 @@ START_TEST(RtlCreateTagHeap)
 {
     HANDLE Heap;
     HANDLE EmptyHeap;
+    ULONG Tag;
     ULONG Tag1;
     ULONG Tag2;
+    ULONG TagBig;
+    ULONG TagNeighbour;
     ULONG TagShift;
     PVOID Blocks[TAG_BLOCK_COUNT];
     PVOID Block;
@@ -196,6 +199,96 @@ START_TEST(RtlCreateTagHeap)
        "RtlQueryTagHeap accepted tag index 0\n");
     ok(RtlQueryTagHeap(Heap, 0, 63, FALSE, &Info) == NULL,
        "RtlQueryTagHeap accepted an unused tag index\n");
+
+    /* A tag with an index below 0x100 is small: it is kept in the header of the
+       block itself. The bigger indexes do not fit there and need an extra
+       header at the end of the block, so both representations are tested here.
+       RtlCreateTagHeap hands the indexes out in order, so keep calling it until
+       it passes the small ones. */
+    TagBig = 0;
+    TagNeighbour = 0;
+    for (i = 0; i < 300 && !TagBig; i++)
+    {
+        Tag = RtlCreateTagHeap(Heap, 0, NULL, NULL);
+        if (Tag == 0)
+            break;
+
+        if ((USHORT)(Tag >> TagShift) >= 0x100)
+            TagBig = Tag;
+        else
+            TagNeighbour = Tag;
+    }
+
+    ok(TagBig != 0, "RtlCreateTagHeap did not hand out a tag above 0xff\n");
+    if (TagBig != 0)
+    {
+        ok((TagBig >> TagShift) >= 0x100,
+           "the tag 0x%lx does not need an extra header\n", TagBig);
+
+        /* Two blocks of the big tag are counted, nothing else is */
+        Blocks[0] = RtlAllocateHeap(Heap, TagBig, TAG_BLOCK_SIZE);
+        Blocks[1] = RtlAllocateHeap(Heap, TagBig, TAG_BLOCK_SIZE);
+        ok(Blocks[0] != NULL, "RtlAllocateHeap with tag 0x%lx failed\n", TagBig);
+        ok(Blocks[1] != NULL, "RtlAllocateHeap with tag 0x%lx failed\n", TagBig);
+
+        if (Blocks[0] != NULL && Blocks[1] != NULL)
+        {
+            Name = RtlQueryTagHeap(Heap, 0, (USHORT)(TagBig >> TagShift), FALSE, &Info);
+            ok(Name != NULL, "RtlQueryTagHeap failed for the big tag\n");
+            ok_eq_ulong(Info.NumberOfAllocations, 2);
+            ok_eq_ulong(Info.NumberOfFrees, 0);
+            ok(Info.BytesAllocated > 0, "the big tag did not account any bytes\n");
+            SizeAllocated = Info.BytesAllocated;
+
+            ok_bool_true(RtlFreeHeap(Heap, TagBig, Blocks[0]), "RtlFreeHeap with tag");
+            Blocks[0] = NULL;
+
+            Name = RtlQueryTagHeap(Heap, 0, (USHORT)(TagBig >> TagShift), FALSE, &Info);
+            ok(Name != NULL, "RtlQueryTagHeap failed after the first big free\n");
+            ok_eq_ulong(Info.NumberOfFrees, 1);
+            ok(Info.BytesAllocated < SizeAllocated,
+               "the freed big block was not subtracted\n");
+
+            ok_bool_true(RtlFreeHeap(Heap, TagBig, Blocks[1]), "RtlFreeHeap with tag");
+            Blocks[1] = NULL;
+
+            Name = RtlQueryTagHeap(Heap, 0, (USHORT)(TagBig >> TagShift), FALSE, &Info);
+            ok(Name != NULL, "RtlQueryTagHeap failed after the second big free\n");
+            ok_eq_ulong(Info.NumberOfAllocations, 2);
+            ok_eq_ulong(Info.NumberOfFrees, 2);
+            ok_eq_size(Info.BytesAllocated, 0);
+
+            /* Asking again without a reset returns the same counters */
+            Name = RtlQueryTagHeap(Heap, 0, (USHORT)(TagBig >> TagShift), FALSE, &Info);
+            ok(Name != NULL, "RtlQueryTagHeap failed for the big tag again\n");
+            ok_eq_ulong(Info.NumberOfAllocations, 2);
+            ok_eq_ulong(Info.NumberOfFrees, 2);
+            ok_eq_size(Info.BytesAllocated, 0);
+        }
+
+        /* The tag which was handed out before stayed without counters */
+        if (TagNeighbour != 0)
+        {
+            Name = RtlQueryTagHeap(Heap, 0, (USHORT)(TagNeighbour >> TagShift), FALSE, &Info);
+            ok(Name != NULL, "RtlQueryTagHeap failed for the neighbour tag\n");
+            ok_eq_ulong(Info.NumberOfAllocations, 0);
+            ok_eq_ulong(Info.NumberOfFrees, 0);
+            ok_eq_size(Info.BytesAllocated, 0);
+        }
+
+        /* A big block freed without a tag still counts on its own tag */
+        Block = RtlAllocateHeap(Heap, TagBig, TAG_BLOCK_SIZE);
+        ok(Block != NULL, "RtlAllocateHeap with tag 0x%lx failed\n", TagBig);
+        if (Block != NULL)
+        {
+            ok_bool_true(RtlFreeHeap(Heap, 0, Block), "RtlFreeHeap without a tag");
+
+            Name = RtlQueryTagHeap(Heap, 0, (USHORT)(TagBig >> TagShift), FALSE, &Info);
+            ok(Name != NULL, "RtlQueryTagHeap failed after a free without a tag\n");
+            ok_eq_ulong(Info.NumberOfFrees, 3);
+            ok_eq_size(Info.BytesAllocated, 0);
+        }
+    }
 
     /* A heap without a tag table has no tags */
     EmptyHeap = RtlCreateHeap(HEAP_GROWABLE, NULL, 0, 0x10000, NULL, NULL);
