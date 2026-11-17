@@ -15,14 +15,21 @@ START_TEST(RtlCreateTagHeap)
 {
     HANDLE Heap;
     HANDLE EmptyHeap;
+    HANDLE VirtualHeap;
+    HANDLE MoveHeap;
     ULONG Tag;
     ULONG Tag1;
     ULONG Tag2;
     ULONG TagBig;
     ULONG TagNeighbour;
     ULONG TagShift;
+    ULONG VirtualTag;
+    ULONG MoveTag;
     PVOID Blocks[TAG_BLOCK_COUNT];
     PVOID Block;
+    PVOID VirtualBlock;
+    PVOID Moved;
+    PVOID Neighbour;
     RTL_HEAP_TAG_INFO Info;
     PWSTR Name;
     SIZE_T SizeAllocated;
@@ -197,7 +204,7 @@ START_TEST(RtlCreateTagHeap)
     /* Index 0 is not a tag, and neither is an index which was never handed out */
     ok(RtlQueryTagHeap(Heap, 0, 0, FALSE, &Info) == NULL,
        "RtlQueryTagHeap accepted tag index 0\n");
-    ok(RtlQueryTagHeap(Heap, 0, 63, FALSE, &Info) == NULL,
+    ok(RtlQueryTagHeap(Heap, 0, (USHORT)((Tag2 >> TagShift) + 1), FALSE, &Info) == NULL,
        "RtlQueryTagHeap accepted an unused tag index\n");
 
     /* A tag with an index below 0x100 is small: it is kept in the header of the
@@ -265,6 +272,16 @@ START_TEST(RtlCreateTagHeap)
             ok_eq_ulong(Info.NumberOfFrees, 2);
             ok_eq_size(Info.BytesAllocated, 0);
         }
+        else
+        {
+            if (Blocks[0] != NULL)
+                RtlFreeHeap(Heap, TagBig, Blocks[0]);
+            if (Blocks[1] != NULL)
+                RtlFreeHeap(Heap, TagBig, Blocks[1]);
+
+            Blocks[0] = NULL;
+            Blocks[1] = NULL;
+        }
 
         /* The tag which was handed out before stayed without counters */
         if (TagNeighbour != 0)
@@ -288,6 +305,122 @@ START_TEST(RtlCreateTagHeap)
             ok_eq_ulong(Info.NumberOfFrees, 3);
             ok_eq_size(Info.BytesAllocated, 0);
         }
+    }
+
+    /* A block which is bigger than the virtual memory threshold of the heap
+       is allocated as a virtual block, and it is accounted to its tag by its
+       commit size, which is not the size of the header entry. Resizing such a
+       block in place releases the tail of it, and the size of the tag has to
+       follow the commit size, otherwise the counters of the tag do not come
+       back to zero when the block is freed. */
+    VirtualHeap = RtlCreateHeap(HEAP_GROWABLE, NULL, 0, 0x10000, NULL, NULL);
+    ok(VirtualHeap != NULL, "RtlCreateHeap for the virtual block failed\n");
+    if (VirtualHeap != NULL)
+    {
+        VirtualTag = RtlCreateTagHeap(VirtualHeap, 0, L"TagVirtual", NULL);
+        ok(VirtualTag != 0, "RtlCreateTagHeap returned no tag for the virtual heap\n");
+        if (VirtualTag != 0)
+        {
+            /* The default threshold of a heap is 0x80000 - PAGE_SIZE, so this
+               allocation cannot be satisfied from the segments of the heap */
+            VirtualBlock = RtlAllocateHeap(VirtualHeap, VirtualTag, 0x80000);
+            ok(VirtualBlock != NULL, "RtlAllocateHeap of a virtual block failed\n");
+            if (VirtualBlock != NULL)
+            {
+                Name = RtlQueryTagHeap(VirtualHeap, 0, (USHORT)(VirtualTag >> TagShift), FALSE, &Info);
+                ok(Name != NULL, "RtlQueryTagHeap failed for the virtual block\n");
+                ok_eq_ulong(Info.NumberOfAllocations, 1);
+                ok_eq_ulong(Info.NumberOfFrees, 0);
+                /* The commit size of the block is bigger than the requested
+                   size, the size of the header entry is much smaller */
+                ok(Info.BytesAllocated > 0x80000,
+                   "the virtual block was not accounted by its commit size\n");
+                SizeAllocated = Info.BytesAllocated;
+
+                /* Shrinking it in place releases the tail of the block, and the
+                   size of the tag has to follow the released bytes */
+                ok_bool_true(RtlReAllocateHeap(VirtualHeap,
+                                               VirtualTag | HEAP_REALLOC_IN_PLACE_ONLY,
+                                               VirtualBlock,
+                                               0x40000) != NULL,
+                             "in place reallocation of a virtual block");
+
+                Name = RtlQueryTagHeap(VirtualHeap, 0, (USHORT)(VirtualTag >> TagShift), FALSE, &Info);
+                ok(Name != NULL, "RtlQueryTagHeap failed after the virtual reallocation\n");
+                ok_eq_ulong(Info.NumberOfAllocations, 1);
+                ok_eq_ulong(Info.NumberOfFrees, 0);
+                ok(Info.BytesAllocated < SizeAllocated,
+                   "the released part of the virtual block stayed in the tag\n");
+                ok(Info.BytesAllocated > 0x40000,
+                   "the virtual block lost its tag size\n");
+
+                ok_bool_true(RtlFreeHeap(VirtualHeap, VirtualTag, VirtualBlock),
+                             "RtlFreeHeap of the virtual block");
+
+                Name = RtlQueryTagHeap(VirtualHeap, 0, (USHORT)(VirtualTag >> TagShift), FALSE, &Info);
+                ok(Name != NULL, "RtlQueryTagHeap failed after the virtual block was freed\n");
+                ok_eq_ulong(Info.NumberOfFrees, 1);
+                ok_eq_size(Info.BytesAllocated, 0);
+            }
+        }
+
+        RtlDestroyHeap(VirtualHeap);
+    }
+
+    /* A block which cannot grow where it is moves to another place. The tag of
+       the block has to travel with it, otherwise the tag keeps an allocation
+       which is not there anymore and loses the new one. The caller passes no
+       tag, so the block can only stay tagged if its own tag travels. */
+    MoveHeap = RtlCreateHeap(HEAP_GROWABLE, NULL, 0, 0x10000, NULL, NULL);
+    ok(MoveHeap != NULL, "RtlCreateHeap for the moved block failed\n");
+    if (MoveHeap != NULL)
+    {
+        MoveTag = RtlCreateTagHeap(MoveHeap, 0, L"TagMove", NULL);
+        ok(MoveTag != 0, "RtlCreateTagHeap returned no tag for the moved block\n");
+        if (MoveTag != 0)
+        {
+            Block = RtlAllocateHeap(MoveHeap, MoveTag, TAG_BLOCK_SIZE);
+            /* The neighbour makes sure that the block cannot grow in place */
+            Neighbour = RtlAllocateHeap(MoveHeap, 0, TAG_BLOCK_SIZE);
+            ok(Block != NULL, "RtlAllocateHeap of the block to move failed\n");
+            ok(Neighbour != NULL, "RtlAllocateHeap of the neighbour failed\n");
+            if (Block != NULL && Neighbour != NULL)
+            {
+                Name = RtlQueryTagHeap(MoveHeap, 0, (USHORT)(MoveTag >> TagShift), FALSE, &Info);
+                ok(Name != NULL, "RtlQueryTagHeap failed before the move\n");
+                ok_eq_ulong(Info.NumberOfAllocations, 1);
+                SizeAllocated = Info.BytesAllocated;
+                ok(SizeAllocated > 0, "the block to move did not account any bytes\n");
+
+                Moved = RtlReAllocateHeap(MoveHeap, 0, Block, 0x1000);
+                ok(Moved != NULL, "the reallocation with a move failed\n");
+                if (Moved != NULL)
+                {
+                    ok(Moved != Block, "the reallocation did not move the block\n");
+
+                    Name = RtlQueryTagHeap(MoveHeap, 0, (USHORT)(MoveTag >> TagShift), FALSE, &Info);
+                    ok(Name != NULL, "RtlQueryTagHeap failed after the move\n");
+                    /* The new block is tagged and the old one was freed */
+                    ok_eq_ulong(Info.NumberOfAllocations, 2);
+                    ok_eq_ulong(Info.NumberOfFrees, 1);
+                    ok(Info.BytesAllocated > SizeAllocated,
+                       "the moved block did not account its new size\n");
+
+                    ok_bool_true(RtlFreeHeap(MoveHeap, MoveTag, Moved),
+                                 "RtlFreeHeap of the moved block");
+
+                    Name = RtlQueryTagHeap(MoveHeap, 0, (USHORT)(MoveTag >> TagShift), FALSE, &Info);
+                    ok(Name != NULL, "RtlQueryTagHeap failed after the moved block was freed\n");
+                    ok_eq_ulong(Info.NumberOfFrees, 2);
+                    ok_eq_size(Info.BytesAllocated, 0);
+                }
+            }
+
+            if (Neighbour != NULL)
+                RtlFreeHeap(MoveHeap, 0, Neighbour);
+        }
+
+        RtlDestroyHeap(MoveHeap);
     }
 
     /* A heap without a tag table has no tags */
