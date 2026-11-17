@@ -2051,7 +2051,9 @@ RtlpGetTaggedBlockSize(PHEAP_ENTRY Entry)
 
 /*
  * Accounts an allocation to the tag stored in the block header. Blocks
- * without a tag return early, so they never wait for the heap lock.
+ * without a tag return early, so they never wait for the heap lock. The
+ * counters of a tag entry are ULONG, as they are in Windows, so a tag which
+ * holds more than 4 GB in total is truncated.
  */
 static
 VOID
@@ -2079,7 +2081,10 @@ RtlpAccountTagAllocation(PHEAP Heap,
 
 /*
  * Accounts a freed block to its tag. BlockSize is the size of the block
- * before it is coalesced with its neighbours.
+ * before it is coalesced with its neighbours. The size of the tag can go
+ * below zero if RtlQueryTagHeap(ResetCounters = TRUE) was called while
+ * blocks of the tag were still alive, which is what Windows does as well:
+ * the counters of a tag are a statistic, not an owner of the memory.
  */
 static
 VOID
@@ -2247,10 +2252,8 @@ RtlAllocateHeap(IN PVOID HeapPtr,
     /* Force flags */
     Flags |= Heap->ForceFlags;
 
-    /* Tag bits overlap the internal heap flags: mask them out of the caller's
-       flags, so that a tag never makes a heap special, but keep the ones the
-       heap forces itself, they describe a debug or a page heap */
-    if (RtlpHeapIsSpecial((Flags & ~HEAP_TAG_MASK) | (Heap->ForceFlags & HEAP_TAG_MASK)))
+    /* A tag never makes a heap special, see RtlpHeapIsSpecial */
+    if (RtlpHeapIsSpecial(RtlpGetHeapFlagsForSpecialCheck(Heap->ForceFlags, Flags)))
         return RtlDebugAllocateHeap(Heap, Flags, Size);
 
     /* Check for the maximum size */
@@ -2483,7 +2486,7 @@ BOOLEAN NTAPI RtlFreeHeap(
     Flags |= Heap->ForceFlags;
 
     /* A tag never makes a heap special, see RtlAllocateHeap */
-    if (RtlpHeapIsSpecial((Flags & ~HEAP_TAG_MASK) | (Heap->ForceFlags & HEAP_TAG_MASK)))
+    if (RtlpHeapIsSpecial(RtlpGetHeapFlagsForSpecialCheck(Heap->ForceFlags, Flags)))
         return RtlDebugFreeHeap(Heap, Flags, Ptr);
 
     /* Get pointer to the heap entry */
@@ -2900,7 +2903,7 @@ RtlReAllocateHeap(HANDLE HeapPtr,
     Flags |= Heap->ForceFlags;
 
     /* A tag never makes a heap special, see RtlAllocateHeap */
-    if (RtlpHeapIsSpecial((Flags & ~HEAP_TAG_MASK) | (Heap->ForceFlags & HEAP_TAG_MASK)))
+    if (RtlpHeapIsSpecial(RtlpGetHeapFlagsForSpecialCheck(Heap->ForceFlags, Flags)))
         return RtlDebugReAllocateHeap(Heap, Flags, Ptr, Size);
 
     /* Make sure size is valid */
@@ -3406,7 +3409,7 @@ RtlSizeHeap(
     Flags |= Heap->ForceFlags;
 
     /* A tag never makes a heap special, see RtlAllocateHeap */
-    if (RtlpHeapIsSpecial((Flags & ~HEAP_TAG_MASK) | (Heap->ForceFlags & HEAP_TAG_MASK)))
+    if (RtlpHeapIsSpecial(RtlpGetHeapFlagsForSpecialCheck(Heap->ForceFlags, Flags)))
         return RtlDebugSizeHeap(Heap, Flags, Ptr);
 
     /* Get the heap entry pointer */
@@ -4017,7 +4020,7 @@ RtlSetUserValueHeap(IN PVOID HeapHandle,
     Flags |= Heap->ForceFlags;
 
     /* A tag never makes a heap special, see RtlAllocateHeap */
-    if (RtlpHeapIsSpecial((Flags & ~HEAP_TAG_MASK) | (Heap->ForceFlags & HEAP_TAG_MASK)))
+    if (RtlpHeapIsSpecial(RtlpGetHeapFlagsForSpecialCheck(Heap->ForceFlags, Flags)))
         return RtlDebugSetUserValueHeap(Heap, Flags, BaseAddress, UserValue);
 
     /* Lock if it's lockable */
@@ -4079,7 +4082,7 @@ RtlSetUserFlagsHeap(IN PVOID HeapHandle,
     Flags |= Heap->ForceFlags;
 
     /* A tag never makes a heap special, see RtlAllocateHeap */
-    if (RtlpHeapIsSpecial((Flags & ~HEAP_TAG_MASK) | (Heap->ForceFlags & HEAP_TAG_MASK)))
+    if (RtlpHeapIsSpecial(RtlpGetHeapFlagsForSpecialCheck(Heap->ForceFlags, Flags)))
         return RtlDebugSetUserFlagsHeap(Heap, Flags, BaseAddress, UserFlagsReset, UserFlagsSet);
 
     /* Lock if it's lockable */
@@ -4135,7 +4138,7 @@ RtlGetUserInfoHeap(IN PVOID HeapHandle,
     Flags |= Heap->ForceFlags;
 
     /* A tag never makes a heap special, see RtlAllocateHeap */
-    if (RtlpHeapIsSpecial((Flags & ~HEAP_TAG_MASK) | (Heap->ForceFlags & HEAP_TAG_MASK)))
+    if (RtlpHeapIsSpecial(RtlpGetHeapFlagsForSpecialCheck(Heap->ForceFlags, Flags)))
         return RtlDebugGetUserInfoHeap(Heap, Flags, BaseAddress, UserValue, UserFlags);
 
     /* Lock if it's lockable */
