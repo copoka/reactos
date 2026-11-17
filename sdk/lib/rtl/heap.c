@@ -1981,6 +1981,8 @@ PHEAP_TAG_ENTRY
 RtlpGetTagEntry(PHEAP Heap,
                 USHORT TagIndex)
 {
+    PHEAP_TAG_ENTRY TagEntry;
+
     if (!TagIndex ||
         (TagIndex & HEAP_PSEUDO_TAG_FLAG) ||
         (TagIndex >= Heap->MaximumTagIndex) ||
@@ -1989,7 +1991,14 @@ RtlpGetTagEntry(PHEAP Heap,
         return NULL;
     }
 
-    return &Heap->TagEntries[TagIndex];
+    /* The table is created for all of its entries at once, so an entry which
+       RtlCreateTagHeap never handed out is still empty and only describes a
+       tag once its own index has been filled in */
+    TagEntry = &Heap->TagEntries[TagIndex];
+    if (TagEntry->TagIndex != TagIndex)
+        return NULL;
+
+    return TagEntry;
 }
 
 /*
@@ -4159,6 +4168,22 @@ RtlUsageHeap(IN HANDLE Heap,
     return STATUS_NOT_IMPLEMENTED;
 }
 
+/***********************************************************************
+ *           RtlQueryTagHeap
+ * Returns the name of a heap tag together with its counters.
+ *
+ * PARAMS
+ *   HeapHandle    [in]  Handle of the heap which owns the tag
+ *   Flags         [in]  Not used
+ *   TagIndex      [in]  Index of the tag, as returned by RtlCreateTagHeap
+ *   ResetCounters [in]  Set the counters of the tag back to zero
+ *   HeapTagInfo   [out] Receives the counters of the tag
+ *
+ * RETURNS
+ * Pointer to the name of the tag, NULL in case of failure
+ *
+ * @implemented
+ */
 PWSTR
 NTAPI
 RtlQueryTagHeap(IN PVOID HeapHandle,
@@ -4167,9 +4192,45 @@ RtlQueryTagHeap(IN PVOID HeapHandle,
                 IN BOOLEAN ResetCounters,
                 OUT PRTL_HEAP_TAG_INFO HeapTagInfo)
 {
-    /* TODO */
-    UNIMPLEMENTED;
-    return NULL;
+    PHEAP Heap = (PHEAP)HeapHandle;
+    PHEAP_TAG_ENTRY TagEntry;
+
+    UNREFERENCED_PARAMETER(Flags);
+
+    /* Validate the parameters */
+    if (!Heap || Heap->Signature != HEAP_SIGNATURE || !HeapTagInfo)
+    {
+        RtlSetLastWin32ErrorAndNtStatusFromNtStatus(STATUS_INVALID_PARAMETER);
+        return NULL;
+    }
+
+    /* A tag exists only if it is present in the tag table of the heap, so a
+       missing entry means that the tag index is wrong */
+    TagEntry = RtlpGetTagEntry(Heap, TagIndex);
+    if (!TagEntry)
+    {
+        RtlSetLastWin32ErrorAndNtStatusFromNtStatus(STATUS_INVALID_PARAMETER);
+        return NULL;
+    }
+
+    RtlLockHeap(Heap);
+
+    /* Copy the counters of the tag */
+    HeapTagInfo->NumberOfAllocations = TagEntry->Allocs;
+    HeapTagInfo->NumberOfFrees = TagEntry->Frees;
+    HeapTagInfo->BytesAllocated = TagEntry->Size;
+
+    /* Reset the counters if the caller asked for it */
+    if (ResetCounters)
+    {
+        TagEntry->Allocs = 0;
+        TagEntry->Frees = 0;
+        TagEntry->Size = 0;
+    }
+
+    RtlUnlockHeap(Heap);
+
+    return TagEntry->TagName;
 }
 
 ULONG
