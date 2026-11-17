@@ -3041,6 +3041,14 @@ RtlReAllocateHeap(HANDLE HeapPtr,
                 {
                     /* Otherwise reduce the commit size */
                     VirtualAllocBlock->CommitSize -= DecommitSize;
+
+                    /* A virtual block is accounted to its tag by the commit
+                       size, which is what follows the released memory */
+                    OldExtra = RtlpGetExtraStuffPointer(InUseEntry);
+                    RtlpAccountTagResize(Heap,
+                                         OldExtra->TagIndex,
+                                         VirtualAllocBlock->CommitSize + DecommitSize,
+                                         VirtualAllocBlock->CommitSize);
                 }
             }
             else
@@ -3133,8 +3141,10 @@ RtlReAllocateHeap(HANDLE HeapPtr,
             }
         }
 
-        /* Keep the size of the tag in sync with the new size of the block */
-        if (InUseEntry->Flags & HEAP_ENTRY_EXTRA_PRESENT)
+        /* Keep the size of the tag in sync with the new size of the block,
+           virtual blocks were already accounted above, by their commit size */
+        if ((InUseEntry->Flags & HEAP_ENTRY_EXTRA_PRESENT) &&
+            !(InUseEntry->Flags & HEAP_ENTRY_VIRTUAL_ALLOC))
         {
             NewExtra = RtlpGetExtraStuffPointer(InUseEntry);
             RtlpAccountTagResize(Heap,
