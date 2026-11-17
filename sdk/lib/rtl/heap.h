@@ -74,6 +74,20 @@ RtlpHeapIsSpecial(ULONG Flags)
     return FALSE;
 }
 
+/* Returns the flags which RtlpHeapIsSpecial() has to look at. The bits of a
+ * tag overlap with the internal heap flags, so a tag never reaches the check
+ * and the ones the heap forces itself are used instead. The validation flags
+ * are kept explicitly: HEAP_TAG_MASK would cover them if HEAP_TAG_SHIFT ever
+ * grows (the headers disagree about its value), and a re-entrant call of the
+ * debug heap would then be taken for a special heap and recurse forever. */
+FORCEINLINE ULONG
+RtlpGetHeapFlagsForSpecialCheck(ULONG ForceFlags, ULONG Flags)
+{
+    return (Flags & ~HEAP_TAG_MASK) |
+           (ForceFlags & HEAP_TAG_MASK) |
+           (Flags & (HEAP_SKIP_VALIDATION_CHECKS | HEAP_VALIDATE_ALL_ENABLED));
+}
+
 /* Heap structures */
 struct _HEAP_COMMON_ENTRY
 {
