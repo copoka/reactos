@@ -7,12 +7,6 @@
 
 #include <kmt_test.h>
 
-/* RtlCreateTagHeap returns the index of the tag shifted into the flags of the
-   heap functions, which is how the heap manager stores it (HEAP_TAG_SHIFT).
-   The shift is not defined by the user mode headers the test is built with. */
-#define TAG_INDEX_SHIFT 18
-#define TAG_INDEX(Tag) ((USHORT)((Tag) >> TAG_INDEX_SHIFT))
-
 /* Blocks the counter test works with */
 #define TAG_BLOCK_COUNT 5
 #define TAG_BLOCK_SIZE 0x100
@@ -23,6 +17,7 @@ START_TEST(RtlCreateTagHeap)
     HANDLE EmptyHeap;
     ULONG Tag1;
     ULONG Tag2;
+    ULONG TagShift;
     PVOID Blocks[TAG_BLOCK_COUNT];
     PVOID Block;
     RTL_HEAP_TAG_INFO Info;
@@ -53,9 +48,22 @@ START_TEST(RtlCreateTagHeap)
 
     ok(Tag2 != Tag1, "RtlCreateTagHeap returned the same tag 0x%lx twice\n", Tag1);
 
+    /* The shift which RtlCreateTagHeap uses to put the index of the tag into
+       the flags of the heap functions is not part of the user mode API and the
+       headers disagree about its value, so derive it instead of guessing: the
+       first tag of a fresh heap is 1 << shift */
+    TagShift = 0;
+    while (TagShift < 32 && !(Tag1 & (1UL << TagShift)))
+        TagShift++;
+
+    ok(TagShift != 0, "the first tag of a fresh heap is not 1 << shift\n");
+    ok(TagShift < 32 && Tag1 == (1UL << TagShift),
+       "the first tag 0x%lx is not a single shifted index\n",
+       Tag1);
+
     /* A tag which was just created has a name and no counters */
     RtlZeroMemory(&Info, sizeof(Info));
-    Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+    Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
     ok(Name != NULL, "RtlQueryTagHeap failed for a valid tag\n");
     ok_eq_ulong(Info.NumberOfAllocations, 0);
     ok_eq_ulong(Info.NumberOfFrees, 0);
@@ -82,7 +90,7 @@ START_TEST(RtlCreateTagHeap)
         return;
     }
 
-    Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+    Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
     ok(Name != NULL, "RtlQueryTagHeap failed after the allocations\n");
     ok_eq_ulong(Info.NumberOfAllocations, TAG_BLOCK_COUNT);
     ok_eq_ulong(Info.NumberOfFrees, 0);
@@ -96,7 +104,7 @@ START_TEST(RtlCreateTagHeap)
         Blocks[i] = NULL;
     }
 
-    Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+    Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
     ok(Name != NULL, "RtlQueryTagHeap failed after the frees\n");
     ok_eq_ulong(Info.NumberOfAllocations, TAG_BLOCK_COUNT);
     ok_eq_ulong(Info.NumberOfFrees, 2);
@@ -111,26 +119,26 @@ START_TEST(RtlCreateTagHeap)
     ok_bool_true(RtlFreeHeap(Heap, Tag1, Blocks[4]), "RtlFreeHeap with tag");
     Blocks[4] = NULL;
 
-    Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+    Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
     ok(Name != NULL, "RtlQueryTagHeap failed after freeing everything\n");
     ok_eq_ulong(Info.NumberOfAllocations, TAG_BLOCK_COUNT);
     ok_eq_ulong(Info.NumberOfFrees, TAG_BLOCK_COUNT);
     ok_eq_size(Info.BytesAllocated, 0);
 
     /* The counters are returned and reset by the same call */
-    Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), TRUE, &Info);
+    Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), TRUE, &Info);
     ok(Name != NULL, "RtlQueryTagHeap with a reset failed\n");
     ok_eq_ulong(Info.NumberOfAllocations, TAG_BLOCK_COUNT);
     ok_eq_ulong(Info.NumberOfFrees, TAG_BLOCK_COUNT);
 
-    Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+    Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
     ok(Name != NULL, "RtlQueryTagHeap after the reset failed\n");
     ok_eq_ulong(Info.NumberOfAllocations, 0);
     ok_eq_ulong(Info.NumberOfFrees, 0);
     ok_eq_size(Info.BytesAllocated, 0);
 
     /* Nothing above touched the second tag */
-    Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag2), FALSE, &Info);
+    Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag2 >> TagShift), FALSE, &Info);
     ok(Name != NULL, "RtlQueryTagHeap failed for the second tag\n");
     ok_eq_ulong(Info.NumberOfAllocations, 0);
     ok_eq_ulong(Info.NumberOfFrees, 0);
@@ -144,7 +152,7 @@ START_TEST(RtlCreateTagHeap)
         ok_bool_true(RtlFreeHeap(Heap, Tag2, Block), "RtlFreeHeap with tag");
 
         /* The first tag is still not affected by the second one */
-        Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+        Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
         ok(Name != NULL, "RtlQueryTagHeap failed after the second tag was used\n");
         ok_eq_ulong(Info.NumberOfAllocations, 0);
         ok_eq_ulong(Info.NumberOfFrees, 0);
@@ -156,7 +164,7 @@ START_TEST(RtlCreateTagHeap)
     ok(Block != NULL, "RtlAllocateHeap of a big block with tag 0x%lx failed\n", Tag1);
     if (Block != NULL)
     {
-        Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+        Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
         ok(Name != NULL, "RtlQueryTagHeap failed after the big allocation\n");
         ok_eq_ulong(Info.NumberOfAllocations, 1);
         SizeAllocated = Info.BytesAllocated;
@@ -168,7 +176,7 @@ START_TEST(RtlCreateTagHeap)
                                   TAG_BLOCK_SIZE);
         ok(Block != NULL, "in place reallocation failed\n");
 
-        Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+        Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
         ok(Name != NULL, "RtlQueryTagHeap failed after the reallocation\n");
         ok_eq_ulong(Info.NumberOfAllocations, 1);
         ok_eq_ulong(Info.NumberOfFrees, 0);
@@ -177,7 +185,7 @@ START_TEST(RtlCreateTagHeap)
 
         ok_bool_true(RtlFreeHeap(Heap, Tag1, Block), "RtlFreeHeap with tag");
 
-        Name = RtlQueryTagHeap(Heap, 0, TAG_INDEX(Tag1), FALSE, &Info);
+        Name = RtlQueryTagHeap(Heap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info);
         ok(Name != NULL, "RtlQueryTagHeap failed after the reallocated block was freed\n");
         ok_eq_ulong(Info.NumberOfFrees, 1);
         ok_eq_size(Info.BytesAllocated, 0);
@@ -194,13 +202,13 @@ START_TEST(RtlCreateTagHeap)
     ok(EmptyHeap != NULL, "RtlCreateHeap failed\n");
     if (EmptyHeap != NULL)
     {
-        ok(RtlQueryTagHeap(EmptyHeap, 0, TAG_INDEX(Tag1), FALSE, &Info) == NULL,
+        ok(RtlQueryTagHeap(EmptyHeap, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info) == NULL,
            "RtlQueryTagHeap accepted a heap without tags\n");
         RtlDestroyHeap(EmptyHeap);
     }
 
     /* An invalid heap handle is rejected instead of crashing */
-    ok(RtlQueryTagHeap(NULL, 0, TAG_INDEX(Tag1), FALSE, &Info) == NULL,
+    ok(RtlQueryTagHeap(NULL, 0, (USHORT)(Tag1 >> TagShift), FALSE, &Info) == NULL,
        "RtlQueryTagHeap accepted a null heap\n");
     Tag1 = RtlCreateTagHeap(NULL, 0, L"TagNone", NULL);
     ok_eq_ulong(Tag1, 0);
