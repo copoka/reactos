@@ -487,7 +487,7 @@ WinMain(
             return 0;
         }
 
-        TRACE("WL: Could not create the winlogon instance mutex (Error %lu)\n", dwError);
+        ERR("WL: Could not create the winlogon instance mutex (Error %lu)\n", dwError);
     }
     else if (dwError == ERROR_ALREADY_EXISTS)
     {
