@@ -471,8 +471,7 @@ WinMain(
      * for a valid handle. A NULL handle with ERROR_ACCESS_DENIED means the
      * name is taken by the first instance, which runs as SYSTEM and whose
      * default DACL denies MUTEX_ALL_ACCESS.
-     */
-    /*
+     *
      * The handle is deliberately kept open for the process lifetime; the kernel
      * releases the mutex when winlogon exits, so this is not a leak.
      */
