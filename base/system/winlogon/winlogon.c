@@ -446,12 +446,47 @@ WinMain(
 #endif
     ULONG HardErrorResponse;
     MSG Msg;
+    HANDLE hInstanceMutex;
+    DWORD dwError;
 
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nShowCmd);
 
     hAppInstance = hInstance;
+
+    /*
+     * Only one winlogon instance may run per session: the second one cannot
+     * register as the logon process and, because winlogon is a critical
+     * process, its termination would bugcheck the whole system (CRITICAL_OBJECT_TERMINATION).
+     * Give up quietly instead, before we become critical.
+     *
+     * CreateMutexW (kernelbase!CreateMutexExW) yields ERROR_ALREADY_EXISTS
+     * only for STATUS_OBJECT_NAME_EXISTS and RtlNtStatusToDosError() - 0 on
+     * success - otherwise, so a stale error can accompany a NULL handle: that
+     * code is trusted only for a valid handle. A NULL handle with
+     * ERROR_ACCESS_DENIED means the name is taken by the first instance,
+     * which runs as SYSTEM and whose default DACL denies MUTEX_ALL_ACCESS.
+     */
+    hInstanceMutex = CreateMutexW(NULL, FALSE, L"WinlogonInstanceMutex");
+    dwError = GetLastError();
+
+    if (hInstanceMutex == NULL)
+    {
+        if (dwError == ERROR_ACCESS_DENIED)
+        {
+            ERR("WL: Another winlogon instance is already running in this session, exiting\n");
+            return 0;
+        }
+
+        TRACE("WL: Could not create the winlogon instance mutex (Error %lu)\n", dwError);
+    }
+    else if (dwError == ERROR_ALREADY_EXISTS)
+    {
+        ERR("WL: Another winlogon instance is already running in this session, exiting\n");
+        CloseHandle(hInstanceMutex);
+        return 0;
+    }
 
     /* Make us critical */
     RtlSetProcessIsCritical(TRUE, NULL, FALSE);
