@@ -461,12 +461,16 @@ WinMain(
      * process, its termination would bugcheck the whole system (CRITICAL_OBJECT_TERMINATION).
      * Give up quietly instead, before we become critical.
      *
-     * CreateMutexW (kernelbase!CreateMutexExW) yields ERROR_ALREADY_EXISTS
-     * only for STATUS_OBJECT_NAME_EXISTS and RtlNtStatusToDosError() - 0 on
-     * success - otherwise, so a stale error can accompany a NULL handle: that
-     * code is trusted only for a valid handle. A NULL handle with
-     * ERROR_ACCESS_DENIED means the name is taken by the first instance,
-     * which runs as SYSTEM and whose default DACL denies MUTEX_ALL_ACCESS.
+     * CreateMutexW is implemented by kernel32, not kernelbase:
+     * dll/win32/kernel32/client/synch.c uses the CreateNtObjectFromWin32Api
+     * macro from kernel32/include/base_x.h, and kernel32.spec keeps
+     * CreateMutexExW as a stub. On success the macro sets ERROR_ALREADY_EXISTS
+     * only for STATUS_OBJECT_NAME_EXISTS and ERROR_SUCCESS otherwise; on
+     * failure BaseSetLastNTError() stores RtlNtStatusToDosError(). A stale
+     * error can therefore accompany a NULL handle: that code is trusted only
+     * for a valid handle. A NULL handle with ERROR_ACCESS_DENIED means the
+     * name is taken by the first instance, which runs as SYSTEM and whose
+     * default DACL denies MUTEX_ALL_ACCESS.
      */
     hInstanceMutex = CreateMutexW(NULL, FALSE, L"WinlogonInstanceMutex");
     dwError = GetLastError();
