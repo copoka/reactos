@@ -472,6 +472,10 @@ WinMain(
      * name is taken by the first instance, which runs as SYSTEM and whose
      * default DACL denies MUTEX_ALL_ACCESS.
      */
+    /*
+     * The handle is deliberately kept open for the process lifetime; the kernel
+     * releases the mutex when winlogon exits, so this is not a leak.
+     */
     hInstanceMutex = CreateMutexW(NULL, FALSE, L"WinlogonInstanceMutex");
     dwError = GetLastError();
 
