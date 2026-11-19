@@ -427,9 +427,26 @@ BOOLEAN
 NTAPI
 RtlQueryPerformanceCounter(OUT PLARGE_INTEGER PerformanceCounter)
 {
-    /* The QPC bypass is never enabled in ReactOS, so always query the kernel,
-     * which returns the same counter as KeQueryPerformanceCounter */
-    return NT_SUCCESS(NtQueryPerformanceCounter(PerformanceCounter, NULL));
+    NTSTATUS Status;
+
+    /* ReactOS never enables the QPC bypass in KUSER_SHARED_DATA: nothing in
+     * ntoskrnl/, hal/ or sdk/lib/ writes QpcBypassEnabled (the field is only
+     * declared in sdk/include/ndk/ketypes.h:794), so it stays zero and the
+     * syscall below is the only path */
+    if (!PerformanceCounter)
+    {
+        RtlSetLastWin32ErrorAndNtStatusFromNtStatus(STATUS_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    Status = NtQueryPerformanceCounter(PerformanceCounter, NULL);
+    if (!NT_SUCCESS(Status))
+    {
+        RtlSetLastWin32ErrorAndNtStatusFromNtStatus(Status);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 /*
@@ -440,10 +457,24 @@ NTAPI
 RtlQueryPerformanceFrequency(OUT PLARGE_INTEGER PerformanceFrequency)
 {
     LARGE_INTEGER Counter;
+    NTSTATUS Status;
+
+    if (!PerformanceFrequency)
+    {
+        RtlSetLastWin32ErrorAndNtStatusFromNtStatus(STATUS_INVALID_PARAMETER);
+        return FALSE;
+    }
 
     /* The syscall probes the counter pointer even when only the frequency is
      * requested, so pass a valid local counter */
-    return NT_SUCCESS(NtQueryPerformanceCounter(&Counter, PerformanceFrequency));
+    Status = NtQueryPerformanceCounter(&Counter, PerformanceFrequency);
+    if (!NT_SUCCESS(Status))
+    {
+        RtlSetLastWin32ErrorAndNtStatusFromNtStatus(Status);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 /*
@@ -458,6 +489,10 @@ RtlQueryUnbiasedInterruptTime(OUT PULONGLONG InterruptTime)
 
     if (!InterruptTime)
     {
+        /* winetests/kernel32/time.c:1156-1158 expects FALSE and
+         * ERROR_INVALID_PARAMETER for a NULL pointer; RtlNtStatusToDosError
+         * maps STATUS_INVALID_PARAMETER to ERROR_INVALID_PARAMETER
+         * (sdk/lib/rtl/error.c:477) */
         RtlSetLastWin32ErrorAndNtStatusFromNtStatus(STATUS_INVALID_PARAMETER);
         return FALSE;
     }
@@ -471,7 +506,9 @@ RtlQueryUnbiasedInterruptTime(OUT PULONGLONG InterruptTime)
     while (High != (ULONG)SharedData->InterruptTime.High2Time);
 
     /* InterruptTimeBias is always zero because ReactOS does not support
-     * suspend; it must be subtracted here if that ever changes */
+     * suspend: KUSER_SHARED_DATA.InterruptTimeBias is never written by the
+     * kernel (see sdk/include/ndk/ketypes.h:776), so it must be subtracted
+     * here if that ever changes */
     *InterruptTime = ((ULONGLONG)High << 32) | Low;
 
     return TRUE;
