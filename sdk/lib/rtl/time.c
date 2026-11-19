@@ -420,4 +420,61 @@ RtlSecondsSince1980ToTime(IN ULONG SecondsSince1980,
     Time->QuadPart = ((LONGLONG)SecondsSince1980 * TICKSPERSEC) + TICKSTO1980;
 }
 
+/*
+ * @implemented
+ */
+BOOLEAN
+NTAPI
+RtlQueryPerformanceCounter(OUT PLARGE_INTEGER PerformanceCounter)
+{
+    /* The QPC bypass is never enabled in ReactOS, so always query the kernel,
+     * which returns the same counter as KeQueryPerformanceCounter */
+    return NT_SUCCESS(NtQueryPerformanceCounter(PerformanceCounter, NULL));
+}
+
+/*
+ * @implemented
+ */
+BOOLEAN
+NTAPI
+RtlQueryPerformanceFrequency(OUT PLARGE_INTEGER PerformanceFrequency)
+{
+    LARGE_INTEGER Counter;
+
+    /* The syscall probes the counter pointer even when only the frequency is
+     * requested, so pass a valid local counter */
+    return NT_SUCCESS(NtQueryPerformanceCounter(&Counter, PerformanceFrequency));
+}
+
+/*
+ * @implemented
+ */
+BOOLEAN
+NTAPI
+RtlQueryUnbiasedInterruptTime(OUT PULONGLONG InterruptTime)
+{
+    volatile KUSER_SHARED_DATA *SharedData = (volatile KUSER_SHARED_DATA *)USER_SHARED_DATA;
+    ULONG High, Low;
+
+    if (!InterruptTime)
+    {
+        RtlSetLastWin32ErrorAndNtStatusFromNtStatus(STATUS_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    /* Read the 64-bit value without a lock: the high part is written twice */
+    do
+    {
+        High = SharedData->InterruptTime.High1Time;
+        Low = SharedData->InterruptTime.LowPart;
+    }
+    while (High != (ULONG)SharedData->InterruptTime.High2Time);
+
+    /* InterruptTimeBias is always zero because ReactOS does not support
+     * suspend; it must be subtracted here if that ever changes */
+    *InterruptTime = ((ULONGLONG)High << 32) | Low;
+
+    return TRUE;
+}
+
 /* EOF */
