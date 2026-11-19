@@ -24,6 +24,7 @@
 #define WIN32_NO_STATUS
 #include "windef.h"
 #include "winbase.h"
+#include "winerror.h"
 #include "winternl.h"
 #include "ddk/wdm.h"
 #include "intrin.h"
@@ -189,6 +190,16 @@ static void test_RtlQueryPerformanceCounter(void)
         ok( frequency.QuadPart == nt_frequency.QuadPart,
             "RtlQueryPerformanceFrequency returned %I64d, expected NtQueryPerformanceCounter frequency %I64d\n",
             frequency.QuadPart, nt_frequency.QuadPart );
+
+        SetLastError( 0xdeadbeef );
+        ret = pRtlQueryPerformanceCounter( NULL );
+        ok( !ret, "RtlQueryPerformanceCounter(NULL) succeeded\n" );
+        ok( GetLastError() == ERROR_INVALID_PARAMETER, "wrong error %lu\n", GetLastError() );
+
+        SetLastError( 0xdeadbeef );
+        ret = pRtlQueryPerformanceFrequency( NULL );
+        ok( !ret, "RtlQueryPerformanceFrequency(NULL) succeeded\n" );
+        ok( GetLastError() == ERROR_INVALID_PARAMETER, "wrong error %lu\n", GetLastError() );
 #else
         todo_wine win_skip("QpcBypassEnabled is not set, skipping tests\n");
 #endif
