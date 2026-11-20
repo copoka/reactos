@@ -446,12 +446,54 @@ WinMain(
 #endif
     ULONG HardErrorResponse;
     MSG Msg;
+    HANDLE hInstanceMutex;
+    DWORD dwError;
 
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nShowCmd);
 
     hAppInstance = hInstance;
+
+    /*
+     * Only one winlogon instance may run per session: the second one cannot
+     * register as the logon process and, because winlogon is a critical
+     * process, its termination would bugcheck the whole system (CRITICAL_OBJECT_TERMINATION).
+     * Give up quietly instead, before we become critical.
+     *
+     * CreateMutexW is implemented by kernel32, not kernelbase:
+     * dll/win32/kernel32/client/synch.c uses the CreateNtObjectFromWin32Api
+     * macro from kernel32/include/base_x.h, and kernel32.spec keeps
+     * CreateMutexExW as a stub. On success the macro sets ERROR_ALREADY_EXISTS
+     * only for STATUS_OBJECT_NAME_EXISTS and ERROR_SUCCESS otherwise; on
+     * failure BaseSetLastNTError() stores RtlNtStatusToDosError(). A stale
+     * error can therefore accompany a NULL handle: that code is trusted only
+     * for a valid handle. A NULL handle with ERROR_ACCESS_DENIED means the
+     * name is taken by the first instance, which runs as SYSTEM and whose
+     * default DACL denies MUTEX_ALL_ACCESS.
+     *
+     * The handle is deliberately kept open for the process lifetime; the kernel
+     * releases the mutex when winlogon exits, so this is not a leak.
+     */
+    hInstanceMutex = CreateMutexW(NULL, FALSE, L"WinlogonInstanceMutex");
+    dwError = GetLastError();
+
+    if (hInstanceMutex == NULL)
+    {
+        if (dwError == ERROR_ACCESS_DENIED)
+        {
+            ERR("WL: Another winlogon instance is already running in this session, exiting\n");
+            return 0;
+        }
+
+        ERR("WL: Could not create the winlogon instance mutex (Error %lu)\n", dwError);
+    }
+    else if (dwError == ERROR_ALREADY_EXISTS)
+    {
+        ERR("WL: Another winlogon instance is already running in this session, exiting\n");
+        CloseHandle(hInstanceMutex);
+        return 0;
+    }
 
     /* Make us critical */
     RtlSetProcessIsCritical(TRUE, NULL, FALSE);
