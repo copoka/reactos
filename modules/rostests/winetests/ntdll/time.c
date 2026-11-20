@@ -24,6 +24,7 @@
 #define WIN32_NO_STATUS
 #include "windef.h"
 #include "winbase.h"
+#include "winerror.h"
 #include "winternl.h"
 #include "ddk/wdm.h"
 #include "intrin.h"
@@ -167,7 +168,41 @@ static void test_RtlQueryPerformanceCounter(void)
 
     if (!(usd->QpcBypassEnabled & SHARED_GLOBAL_FLAGS_QPC_BYPASS_ENABLED))
     {
+#ifdef __REACTOS__
+        /* Without the QPC bypass these functions have to fall back to
+         * NtQueryPerformanceCounter and return the same values */
+        LARGE_INTEGER count1, count2, nt_frequency;
+
+        status = pNtQueryPerformanceCounter( &count1, NULL );
+        ok( !status, "NtQueryPerformanceCounter failed %lx\n", status );
+        ret = pRtlQueryPerformanceCounter( &counter );
+        ok( ret, "RtlQueryPerformanceCounter failed\n" );
+        status = pNtQueryPerformanceCounter( &count2, NULL );
+        ok( !status, "NtQueryPerformanceCounter failed %lx\n", status );
+        ok( count1.QuadPart <= counter.QuadPart && counter.QuadPart <= count2.QuadPart,
+            "NtQueryPerformanceCounter %I64d..%I64d and RtlQueryPerformanceCounter %I64d are out of order\n",
+            count1.QuadPart, count2.QuadPart, counter.QuadPart );
+
+        status = pNtQueryPerformanceCounter( &count1, &nt_frequency );
+        ok( !status, "NtQueryPerformanceCounter failed %lx\n", status );
+        ret = pRtlQueryPerformanceFrequency( &frequency );
+        ok( ret, "RtlQueryPerformanceFrequency failed\n" );
+        ok( frequency.QuadPart == nt_frequency.QuadPart,
+            "RtlQueryPerformanceFrequency returned %I64d, expected NtQueryPerformanceCounter frequency %I64d\n",
+            frequency.QuadPart, nt_frequency.QuadPart );
+
+        SetLastError( 0xdeadbeef );
+        ret = pRtlQueryPerformanceCounter( NULL );
+        ok( !ret, "RtlQueryPerformanceCounter(NULL) succeeded\n" );
+        ok( GetLastError() == ERROR_INVALID_PARAMETER, "wrong error %lu\n", GetLastError() );
+
+        SetLastError( 0xdeadbeef );
+        ret = pRtlQueryPerformanceFrequency( NULL );
+        ok( !ret, "RtlQueryPerformanceFrequency(NULL) succeeded\n" );
+        ok( GetLastError() == ERROR_INVALID_PARAMETER, "wrong error %lu\n", GetLastError() );
+#else
         todo_wine win_skip("QpcBypassEnabled is not set, skipping tests\n");
+#endif
         return;
     }
 

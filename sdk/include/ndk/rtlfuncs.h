@@ -4630,11 +4630,32 @@ RtlCutoverTimeToSystemTime(
     _In_ PLARGE_INTEGER CurrentTime,
     _In_ BOOLEAN ThisYearsCutoverOnly);
 
+_Success_(return != FALSE)
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlQueryPerformanceCounter(
+    _Out_ PLARGE_INTEGER PerformanceCounter);
+
+_Success_(return != FALSE)
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlQueryPerformanceFrequency(
+    _Out_ PLARGE_INTEGER PerformanceFrequency);
+
 NTSYSAPI
 NTSTATUS
 NTAPI
 RtlQueryTimeZoneInformation(
     _Out_ PRTL_TIME_ZONE_INFORMATION TimeZoneInformation);
+
+_Success_(return != FALSE)
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlQueryUnbiasedInterruptTime(
+    _Out_ PULONGLONG InterruptTime);
 
 NTSYSAPI
 VOID
