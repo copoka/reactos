@@ -267,22 +267,19 @@ GeneralDlg_UpdateIcons(HWND hDlg, UINT nCtrlID, PGENERAL_DIALOG pGeneral)
 }
 
 static void
-GeneralDlg_StoreToUI(HWND hwndDlg, BOOL bDoubleClick, BOOL bUseCommonTasks,
+GeneralDlg_StoreToUI(HWND hwndDlg, BOOL bDoubleClick,
                      BOOL bUnderlineHover, BOOL bNewWindowMode, PGENERAL_DIALOG pGeneral)
 {
     if (SHRestricted(REST_CLASSICSHELL))
     {
         EnableWindow(GetDlgItem(hwndDlg, IDC_FOLDER_OPTIONS_SINGLECLICK), FALSE);
         bDoubleClick = TRUE;
-        bUseCommonTasks = FALSE;
     }
 
-    EnableWindow(GetDlgItem(hwndDlg, IDC_FOLDER_OPTIONS_COMMONTASKS), bUseCommonTasks); // TODO: ROS DefView does not support WebView nor the tasks pane
-
-    if (bUseCommonTasks)
-        CheckRadioButton(hwndDlg, IDC_FOLDER_OPTIONS_COMMONTASKS, IDC_FOLDER_OPTIONS_CLASSICFOLDERS, IDC_FOLDER_OPTIONS_COMMONTASKS);
-    else
-        CheckRadioButton(hwndDlg, IDC_FOLDER_OPTIONS_COMMONTASKS, IDC_FOLDER_OPTIONS_CLASSICFOLDERS, IDC_FOLDER_OPTIONS_CLASSICFOLDERS);
+    // ReactOS DefView supports neither WebView nor the tasks pane, so this option
+    // stays disabled and classic folders is always selected.
+    EnableWindow(GetDlgItem(hwndDlg, IDC_FOLDER_OPTIONS_COMMONTASKS), FALSE);
+    CheckRadioButton(hwndDlg, IDC_FOLDER_OPTIONS_COMMONTASKS, IDC_FOLDER_OPTIONS_CLASSICFOLDERS, IDC_FOLDER_OPTIONS_CLASSICFOLDERS);
 
     if (bDoubleClick)
         CheckRadioButton(hwndDlg, IDC_FOLDER_OPTIONS_SINGLECLICK, IDC_FOLDER_OPTIONS_DOUBLECLICK, IDC_FOLDER_OPTIONS_DOUBLECLICK);
@@ -306,13 +303,12 @@ static BOOL
 GeneralDlg_OnInitDialog(HWND hwndDlg, PGENERAL_DIALOG pGeneral)
 {
     SHELLSTATE ss;
-    SHGetSetSettings(&ss, SSF_DOUBLECLICKINWEBVIEW | SSF_WEBVIEW, FALSE);
+    SHGetSetSettings(&ss, SSF_DOUBLECLICKINWEBVIEW, FALSE);
     BOOL bDoubleClick = !!ss.fDoubleClickInWebView;
-    BOOL bUseCommonTasks = !!ss.fWebView;
     BOOL bUnderlineHover = IntGetRawIconUnderlineValue() == UNDERLINE_HOVER;
     BOOL bNewWindowMode = IntGetNewWindowMode();
 
-    GeneralDlg_StoreToUI(hwndDlg, bDoubleClick, bUseCommonTasks, bUnderlineHover, bNewWindowMode, pGeneral);
+    GeneralDlg_StoreToUI(hwndDlg, bDoubleClick, bUnderlineHover, bNewWindowMode, pGeneral);
     GeneralDlg_UpdateIcons(hwndDlg, 0, pGeneral);
 
     return TRUE;
@@ -322,12 +318,13 @@ static void
 GeneralDlg_OnRestoreDefaults(HWND hwndDlg, PGENERAL_DIALOG pGeneral)
 {
     // default values
-    BOOL bDoubleClick = TRUE;
-    BOOL bUseCommonTasks = TRUE;
+    SHELLSTATE ss;
+    SHELL32_GetDefaultShellState(&ss);
+    BOOL bDoubleClick = !!ss.fDoubleClickInWebView;
     BOOL bUnderlineHover = FALSE;
     BOOL bNewWindowMode = (_WIN32_WINNT < _WIN32_WINNT_WIN2K);
 
-    GeneralDlg_StoreToUI(hwndDlg, bDoubleClick, bUseCommonTasks, bUnderlineHover, bNewWindowMode, pGeneral);
+    GeneralDlg_StoreToUI(hwndDlg, bDoubleClick, bUnderlineHover, bNewWindowMode, pGeneral);
     GeneralDlg_UpdateIcons(hwndDlg, 0, pGeneral);
 }
 
