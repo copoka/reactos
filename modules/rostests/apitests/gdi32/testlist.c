@@ -76,6 +76,7 @@ extern void func_SetPixel(void);
 extern void func_SetSysColors(void);
 extern void func_SetWindowExtEx(void);
 extern void func_SetWorldTransform(void);
+extern void func_SharedFaceRefCount(void);
 extern void func_StretchBlt(void);
 extern void func_TextTransform(void);
 
@@ -155,6 +156,7 @@ const struct test winetest_testlist[] =
     { "SetSysColors", func_SetSysColors },
     { "SetWindowExtEx", func_SetWindowExtEx },
     { "SetWorldTransform", func_SetWorldTransform },
+    { "SharedFaceRefCount", func_SharedFaceRefCount },
     { "StretchBlt", func_StretchBlt },
     { "TextTransform", func_TextTransform },
 

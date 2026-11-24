@@ -1975,6 +1975,9 @@ IntGdiLoadFontByIndexFromMemory(PGDI_LOAD_FONT pLoadFont, FT_Long FontIndex)
     if (!SharedFace)
     {
         DPRINT1("SharedFace_Create failed\n");
+        IntLockFreeType();
+        FT_Done_Face(Face);
+        IntUnLockFreeType();
         EngSetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return 0; /* Failure */
     }
@@ -1989,6 +1992,10 @@ IntGdiLoadFontByIndexFromMemory(PGDI_LOAD_FONT pLoadFont, FT_Long FontIndex)
     }
 
     FaceCount += IntGdiLoadFontsFromMemory(pLoadFont, SharedFace, FontIndex, -1);
+
+    /* The FONT_ENTRY created above keeps its own reference; release the
+     * reference taken by SharedFace_Create. */
+    SharedFace_Release(SharedFace, TRUE);
     return FaceCount;
 }
 
