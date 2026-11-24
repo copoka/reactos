@@ -432,6 +432,24 @@ ResizeConWnd(PGUI_CONSOLE_DATA GuiData, DWORD WidthUnit, DWORD HeightUnit)
 
     DWORD Width, Height;
 
+    /*
+     * In full-screen mode the window covers the whole screen: no frame or
+     * caption metrics are added. Scroll bars are hidden, as in a full-screen
+     * console under Windows, otherwise SM_CXVSCROLL would eat a part of the
+     * client area width and clip the text.
+     */
+    if (GuiData->GuiInfo.FullScreen)
+    {
+        ShowScrollBar(GuiData->hWindow, SB_VERT, FALSE);
+        ShowScrollBar(GuiData->hWindow, SB_HORZ, FALSE);
+
+        SetWindowPos(GuiData->hWindow, NULL, 0, 0,
+                     GetSystemMetrics(SM_CXSCREEN),
+                     GetSystemMetrics(SM_CYSCREEN),
+                     SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
+        return;
+    }
+
     Width  = Buff->ViewSize.X * WidthUnit  +
              2 * (GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXEDGE));
     Height = Buff->ViewSize.Y * HeightUnit +
