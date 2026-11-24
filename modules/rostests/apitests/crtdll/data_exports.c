@@ -30,13 +30,11 @@ START_TEST(data_exports)
 {
     HMODULE Module;
 
-    Module = GetModuleHandleA("crtdll.dll");
-    ok(Module != NULL, "crtdll.dll is not loaded\n");
+    /* crtdll.dll is an import of this test, so a missing module is a failure */
+    Module = GetModuleHandleA(TEST_DLL_NAME);
+    ok(Module != NULL, "Failed to get the handle of %s\n", TEST_DLL_NAME);
     if (Module == NULL)
-    {
-        skip("crtdll.dll is not loaded\n");
         return;
-    }
 
     /* Control: a neighbouring data export that always had the suffix */
     ok(GetProcAddress(Module, "__argc_dll") != NULL,
@@ -46,7 +44,11 @@ START_TEST(data_exports)
     TestDataExport(Module, "_fmode_dll");
     TestDataExport(Module, "_commode_dll");
 
-    /* The crtdll contract only uses the suffixed names */
+    /*
+     * The unsuffixed names are a by-product of fc55d38e0ed ("[CRTDLL] Build
+     * from msvcrt sources"), which renamed them in crtdll.spec, not a part of
+     * the crtdll contract: Windows does not export them either.
+     */
     ok(GetProcAddress(Module, "_fmode") == NULL, "_fmode is exported\n");
     ok(GetProcAddress(Module, "_commode") == NULL, "_commode is exported\n");
 }
