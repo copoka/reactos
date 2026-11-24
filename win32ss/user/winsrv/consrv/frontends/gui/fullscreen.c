@@ -173,15 +173,16 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
 
 
         /*
-         * Restore the window and bring it to the foreground only when it was
-         * still active: leaving the full-screen mode on deactivation must not
-         * take the focus away from the window the user switched to. The window
-         * then stays minimized and the shell restores it with SC_RESTORE when
-         * the user activates the console again.
+         * Restore the saved window placement in both cases, otherwise the
+         * window would keep the full-screen size and position once the shell
+         * brings it back after the user activates the console again.
+         * Only the showing, the raising and the focus depend on the activation
+         * state: leaving the full-screen mode on deactivation must not take the
+         * focus away from the window the user switched to.
          */
         if (WasActive)
         {
-            /* Restore the window to its original position */
+            /* Restore the window to its original position, size and show state */
             SetWindowPlacement(GuiData->hWindow, &GuiData->WndPl);
 
             PostMessageW(GuiData->hWindow, WM_SYSCOMMAND,
@@ -191,6 +192,21 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
 
             /* Make it the foreground window */
             SetForegroundWindow(GuiData->hWindow);
+        }
+        else
+        {
+            WINDOWPLACEMENT WndPl;
+
+            /*
+             * Apply the saved placement without activating the window: the
+             * show state is forced to minimized, hence the window only gets
+             * its normal position and size back and stays minimized until the
+             * shell restores it with SC_RESTORE on the next activation.
+             */
+            WndPl = GuiData->WndPl;
+            WndPl.showCmd = SW_SHOWMINIMIZED;
+            WndPl.flags = 0;
+            SetWindowPlacement(GuiData->hWindow, &WndPl);
         }
 
         /* Resize it */
