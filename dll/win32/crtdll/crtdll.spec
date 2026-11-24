@@ -58,7 +58,7 @@
 @ cdecl _clearfp()
 @ cdecl _close(long)
 @ cdecl _commit(long)
-@ extern _commode MSVCRT__commode
+@ extern _commode_dll MSVCRT__commode
 @ cdecl _control87(long long)
 @ cdecl _controlfp(long long)
 @ cdecl _copysign( double double )
@@ -103,7 +103,7 @@
 @ cdecl _finite( double )
 @ cdecl _flsbuf(long ptr)
 @ cdecl _flushall()
-@ extern _fmode MSVCRT__fmode
+@ extern _fmode_dll MSVCRT__fmode
 @ cdecl _fpclass(double)
 @ cdecl _fpieee_flt(long ptr ptr)
 @ cdecl _fpreset()
