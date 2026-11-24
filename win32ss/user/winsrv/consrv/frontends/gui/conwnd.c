@@ -429,8 +429,10 @@ ResizeConWnd(PGUI_CONSOLE_DATA GuiData, DWORD WidthUnit, DWORD HeightUnit)
 {
     PCONSOLE_SCREEN_BUFFER Buff = GuiData->ActiveBuffer;
     SCROLLINFO sInfo;
+    RECT rcClient;
 
     DWORD Width, Height;
+    DWORD windx, windy, charx, chary;
 
     /*
      * In full-screen mode the window covers the whole screen: no frame or
@@ -447,6 +449,39 @@ ResizeConWnd(PGUI_CONSOLE_DATA GuiData, DWORD WidthUnit, DWORD HeightUnit)
                      GetSystemMetrics(SM_CXSCREEN),
                      GetSystemMetrics(SM_CYSCREEN),
                      SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
+
+        /*
+         * SetWindowPos generates a WM_SIZE, but OnSize ignores it because the
+         * caller holds WindowSizeLock, so the viewport is recomputed here.
+         * In full-screen mode the scroll bars are hidden, hence ViewSize must
+         * match the screen; otherwise the console keeps considering visible
+         * the lines that lie outside of the screen.
+         */
+        GetClientRect(GuiData->hWindow, &rcClient);
+
+        /* A minimized window has an empty client area: keep the previous view size */
+        if ((rcClient.right > rcClient.left) && (rcClient.bottom > rcClient.top))
+        {
+            windx = rcClient.right - rcClient.left;
+            windy = rcClient.bottom - rcClient.top;
+
+            charx = windx / (int)WidthUnit;
+            chary = windy / (int)HeightUnit;
+
+            /* Character alignment (round size up or down) */
+            if ((windx % WidthUnit ) >= (WidthUnit  / 2)) ++charx;
+            if ((windy % HeightUnit) >= (HeightUnit / 2)) ++chary;
+
+            /* The view size cannot be larger than the screen buffer */
+            Buff->ViewSize.X = (charx <= (DWORD)Buff->ScreenBufferSize.X) ? charx : Buff->ScreenBufferSize.X;
+            Buff->ViewSize.Y = (chary <= (DWORD)Buff->ScreenBufferSize.Y) ? chary : Buff->ScreenBufferSize.Y;
+
+            /* Adjust the start of the visible area if we are attempting to show nonexistent areas */
+            if ((Buff->ScreenBufferSize.X - Buff->ViewOrigin.X) < Buff->ViewSize.X) Buff->ViewOrigin.X = Buff->ScreenBufferSize.X - Buff->ViewSize.X;
+            if ((Buff->ScreenBufferSize.Y - Buff->ViewOrigin.Y) < Buff->ViewSize.Y) Buff->ViewOrigin.Y = Buff->ScreenBufferSize.Y - Buff->ViewSize.Y;
+        }
+
+        InvalidateRect(GuiData->hWindow, NULL, TRUE);
         return;
     }
 
