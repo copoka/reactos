@@ -201,11 +201,20 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
              * Apply the saved placement without activating the window: the
              * show state is forced to minimized, hence the window only gets
              * its normal position and size back and stays minimized until the
-             * shell restores it with SC_RESTORE on the next activation.
+             * shell restores it with SC_RESTORE on the next activation. In
+             * ReactOS the minimized path of co_WinPosShowWindow uses
+             * SWP_NOACTIVATE | SWP_NOZORDER (winpos.c:2712-2740) and
+             * SetWindowPlacement passes the same flags (winpos.c:686): the
+             * window is not activated, SW_SHOWMINNOACTIVE would behave the
+             * same. Keep the snapshot flags as in the active branch: because
+             * the window is minimized here, WPF_RESTORETOMAXIMIZED is stored
+             * in InternalPos (winpos.c:723-730) and the shell restores the
+             * console maximized (winpos.c:2562-2571); restoring a window that
+             * is not minimized clears the flag (winpos.c:2592).
              */
             WndPl = GuiData->WndPl;
             WndPl.showCmd = SW_SHOWMINIMIZED;
-            WndPl.flags = 0;
+            WndPl.flags |= GuiData->IsWndMax ? WPF_RESTORETOMAXIMIZED : 0;
             SetWindowPlacement(GuiData->hWindow, &WndPl);
         }
 
