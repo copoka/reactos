@@ -2108,6 +2108,25 @@ OnGetMinMaxInfo(PGUI_CONSOLE_DATA GuiData, PMINMAXINFO minMaxInfo)
 
     ActiveBuffer = GuiData->ActiveBuffer;
 
+    /*
+     * In full-screen mode the window has neither a frame nor a caption, and
+     * its size is not limited by the screen buffer size: the screen buffer is
+     * letterboxed inside the window instead. The window always spans the
+     * whole screen.
+     */
+    if (GuiData->GuiInfo.FullScreen)
+    {
+        minMaxInfo->ptMaxSize.x = GetSystemMetrics(SM_CXSCREEN);
+        minMaxInfo->ptMaxSize.y = GetSystemMetrics(SM_CYSCREEN);
+        minMaxInfo->ptMaxPosition.x = 0;
+        minMaxInfo->ptMaxPosition.y = 0;
+        minMaxInfo->ptMinTrackSize = minMaxInfo->ptMaxSize;
+        minMaxInfo->ptMaxTrackSize = minMaxInfo->ptMaxSize;
+
+        LeaveCriticalSection(&Console->Lock);
+        return;
+    }
+
     GetScreenBufferSizeUnits(ActiveBuffer, GuiData, &WidthUnit, &HeightUnit);
 
     windx = CONGUI_MIN_WIDTH  * WidthUnit  + 2 * (GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXEDGE));
