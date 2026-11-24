@@ -51,6 +51,13 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
     PCONSRV_CONSOLE Console = GuiData->Console;
 
     /*
+     * Read the activation state before the window is minimized below: that
+     * sends WM_ACTIVATE(WA_INACTIVE) and OnActivate clears IsWindowActive,
+     * which would make a deliberate Alt+Enter switch look like a deactivation.
+     */
+    BOOL WasActive = GuiData->IsWindowActive;
+
+    /*
      * See:
      * http://stackoverflow.com/questions/2382464/win32-full-screen-and-hiding-taskbar
      * http://stackoverflow.com/questions/3549148/fullscreen-management-with-winapi
@@ -165,16 +172,51 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
                      SWP_FRAMECHANGED /*| SWP_SHOWWINDOW*/);
 
 
-        /* Restore the window to its original position */
-        SetWindowPlacement(GuiData->hWindow, &GuiData->WndPl);
+        /*
+         * Restore the saved window placement in both cases, otherwise the
+         * window would keep the full-screen size and position once the shell
+         * brings it back after the user activates the console again.
+         * Only the showing, the raising and the focus depend on the activation
+         * state: leaving the full-screen mode on deactivation must not take the
+         * focus away from the window the user switched to.
+         */
+        if (WasActive)
+        {
+            /* Restore the window to its original position, size and show state */
+            SetWindowPlacement(GuiData->hWindow, &GuiData->WndPl);
 
-        PostMessageW(GuiData->hWindow, WM_SYSCOMMAND,
-                     GuiData->IsWndMax ? SC_MAXIMIZE : SC_RESTORE,
-                     0);
-        // ShowWindowAsync(GuiData->hWindow, SW_RESTORE);
+            PostMessageW(GuiData->hWindow, WM_SYSCOMMAND,
+                         GuiData->IsWndMax ? SC_MAXIMIZE : SC_RESTORE,
+                         0);
+            // ShowWindowAsync(GuiData->hWindow, SW_RESTORE);
 
-        /* Make it the foreground window */
-        SetForegroundWindow(GuiData->hWindow);
+            /* Make it the foreground window */
+            SetForegroundWindow(GuiData->hWindow);
+        }
+        else
+        {
+            WINDOWPLACEMENT WndPl;
+
+            /*
+             * Apply the saved placement without activating the window: the
+             * show state is forced to minimized, hence the window only gets
+             * its normal position and size back and stays minimized until the
+             * shell restores it with SC_RESTORE on the next activation. In
+             * ReactOS the minimized path of co_WinPosShowWindow uses
+             * SWP_NOACTIVATE | SWP_NOZORDER (winpos.c:2712-2740) and
+             * SetWindowPlacement passes the same flags (winpos.c:686): the
+             * window is not activated, SW_SHOWMINNOACTIVE would behave the
+             * same. Keep the snapshot flags as in the active branch: because
+             * the window is minimized here, WPF_RESTORETOMAXIMIZED is stored
+             * in InternalPos (winpos.c:723-730) and the shell restores the
+             * console maximized (winpos.c:2562-2571); restoring a window that
+             * is not minimized clears the flag (winpos.c:2592).
+             */
+            WndPl = GuiData->WndPl;
+            WndPl.showCmd = SW_SHOWMINIMIZED;
+            WndPl.flags |= GuiData->IsWndMax ? WPF_RESTORETOMAXIMIZED : 0;
+            SetWindowPlacement(GuiData->hWindow, &WndPl);
+        }
 
         /* Resize it */
         // GuiConsoleResizeWindow(GuiData);
