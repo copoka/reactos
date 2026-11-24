@@ -17,8 +17,10 @@ list(APPEND _keyboard_layouts
     kbdaze
     kbdazel
     kbdbe
+    kbdbene
     kbdbga
     kbdbgt
+    kbdbhc
     kbdblr
     kbdbr
     kbdbu
@@ -115,6 +117,7 @@ list(APPEND _keyboard_layouts
     kbdtuf
     kbdtuq
     kbduk
+    kbdukx
     kbdur
     kbdurs
     kbdus
