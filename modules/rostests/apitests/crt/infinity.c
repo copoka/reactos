@@ -104,7 +104,10 @@ START_TEST(infinity)
     {
         unknown = NULL;
         hr = CoCreateInstance(&CLSID_DOMDocument30, NULL, CLSCTX_INPROC_SERVER, &IID_IUnknown, (void **)&unknown);
-        ok(hr == S_OK, "CoCreateInstance(CLSID_DOMDocument30) failed, hr = 0x%08lx\n", hr);
+        if (hr == REGDB_E_CLASSNOTREG)
+            skip("CLSID_DOMDocument30 is not registered\n");
+        else
+            ok(hr == S_OK, "CoCreateInstance(CLSID_DOMDocument30) failed, hr = 0x%08lx\n", hr);
         if (SUCCEEDED(hr))
             unknown->lpVtbl->Release(unknown);
         CoUninitialize();
