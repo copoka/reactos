@@ -6,10 +6,12 @@
  * COPYRIGHT:   Copyright 2026 Andrey Markin <py6on@yandex.ru>
  */
 
+/* Turns DEFINE_GUID into definitions, so that IID_IUnknown (unknown.h) and
+ * CLSID_DOMDocument30 together with the msxml2.h IIDs are defined here */
+#include <initguid.h>
 #include <windows.h>
 #include <math.h>
 #include <ole2.h>
-#include <initguid.h> /* For CLSID_DOMDocument30, defined by msxml2.h */
 #include <msxml2.h>
 #include <apitest.h>
 
