@@ -429,8 +429,61 @@ ResizeConWnd(PGUI_CONSOLE_DATA GuiData, DWORD WidthUnit, DWORD HeightUnit)
 {
     PCONSOLE_SCREEN_BUFFER Buff = GuiData->ActiveBuffer;
     SCROLLINFO sInfo;
+    RECT rcClient;
 
     DWORD Width, Height;
+    DWORD windx, windy, charx, chary;
+
+    /*
+     * In full-screen mode the window covers the whole screen: no frame or
+     * caption metrics are added. Scroll bars are hidden, as in a full-screen
+     * console under Windows, otherwise SM_CXVSCROLL would eat a part of the
+     * client area width and clip the text.
+     */
+    if (GuiData->GuiInfo.FullScreen)
+    {
+        ShowScrollBar(GuiData->hWindow, SB_VERT, FALSE);
+        ShowScrollBar(GuiData->hWindow, SB_HORZ, FALSE);
+
+        SetWindowPos(GuiData->hWindow, NULL, 0, 0,
+                     GetSystemMetrics(SM_CXSCREEN),
+                     GetSystemMetrics(SM_CYSCREEN),
+                     SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
+
+        /*
+         * SetWindowPos generates a WM_SIZE, but OnSize ignores it because the
+         * caller holds WindowSizeLock, so the viewport is recomputed here.
+         * In full-screen mode the scroll bars are hidden, hence ViewSize must
+         * match the screen; otherwise the console keeps considering visible
+         * the lines that lie outside of the screen.
+         */
+        GetClientRect(GuiData->hWindow, &rcClient);
+
+        /* A minimized window has an empty client area: keep the previous view size */
+        if ((rcClient.right > rcClient.left) && (rcClient.bottom > rcClient.top))
+        {
+            windx = rcClient.right - rcClient.left;
+            windy = rcClient.bottom - rcClient.top;
+
+            charx = windx / (int)WidthUnit;
+            chary = windy / (int)HeightUnit;
+
+            /* Character alignment (round size up or down) */
+            if ((windx % WidthUnit ) >= (WidthUnit  / 2)) ++charx;
+            if ((windy % HeightUnit) >= (HeightUnit / 2)) ++chary;
+
+            /* The view size cannot be larger than the screen buffer */
+            Buff->ViewSize.X = (charx <= (DWORD)Buff->ScreenBufferSize.X) ? charx : Buff->ScreenBufferSize.X;
+            Buff->ViewSize.Y = (chary <= (DWORD)Buff->ScreenBufferSize.Y) ? chary : Buff->ScreenBufferSize.Y;
+
+            /* Adjust the start of the visible area if we are attempting to show nonexistent areas */
+            if ((Buff->ScreenBufferSize.X - Buff->ViewOrigin.X) < Buff->ViewSize.X) Buff->ViewOrigin.X = Buff->ScreenBufferSize.X - Buff->ViewSize.X;
+            if ((Buff->ScreenBufferSize.Y - Buff->ViewOrigin.Y) < Buff->ViewSize.Y) Buff->ViewOrigin.Y = Buff->ScreenBufferSize.Y - Buff->ViewSize.Y;
+        }
+
+        InvalidateRect(GuiData->hWindow, NULL, TRUE);
+        return;
+    }
 
     Width  = Buff->ViewSize.X * WidthUnit  +
              2 * (GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXEDGE));
@@ -1048,6 +1101,8 @@ OnPaint(PGUI_CONSOLE_DATA GuiData)
     PCONSOLE_SCREEN_BUFFER ActiveBuffer = GuiData->ActiveBuffer;
     PAINTSTRUCT ps;
     RECT rcPaint;
+    WORD BkgdAttrib;
+    HBRUSH BkgdBrush;
 
     /* Do nothing if the window is hidden */
     if (!GuiData->IsWindowVisible) return;
@@ -1058,6 +1113,29 @@ OnPaint(PGUI_CONSOLE_DATA GuiData)
         ps.rcPaint.top < ps.rcPaint.bottom)
     {
         EnterCriticalSection(&GuiData->Lock);
+
+        /*
+         * The frame buffer bitmap covers exactly the screen buffer size, so
+         * the rest of the invalidated client area (the letterbox area of a
+         * full-screen console, and the free space around a smaller view in
+         * windowed mode) is not painted by any of the drawing routines below,
+         * and WM_ERASEBKGND does not erase it either. Fill the whole
+         * invalidated region with the console background colour; the text,
+         * caret and selection are drawn afterwards and overwrite what belongs
+         * to them. Graphics buffers have their own drawing code and are left
+         * untouched.
+         */
+        if (GetType(ActiveBuffer) == TEXTMODE_BUFFER)
+        {
+            BkgdAttrib = ((PTEXTMODE_SCREEN_BUFFER)ActiveBuffer)->ScreenDefaultAttrib;
+            BkgdBrush  = CreateSolidBrush(RGBFromAttrib(GuiData->Console,
+                                                        BkgdAttribFromAttrib(BkgdAttrib)));
+            if (BkgdBrush != NULL)
+            {
+                FillRect(ps.hdc, &ps.rcPaint, BkgdBrush);
+                DeleteObject(BkgdBrush);
+            }
+        }
 
         /* Compose the current screen-buffer on-memory */
         if (GetType(ActiveBuffer) == TEXTMODE_BUFFER)
@@ -2107,6 +2185,25 @@ OnGetMinMaxInfo(PGUI_CONSOLE_DATA GuiData, PMINMAXINFO minMaxInfo)
     if (!ConDrvValidateConsoleUnsafe((PCONSOLE)Console, CONSOLE_RUNNING, TRUE)) return;
 
     ActiveBuffer = GuiData->ActiveBuffer;
+
+    /*
+     * In full-screen mode the window has neither a frame nor a caption, and
+     * its size is not limited by the screen buffer size: the screen buffer is
+     * letterboxed inside the window instead. The window always spans the
+     * whole screen.
+     */
+    if (GuiData->GuiInfo.FullScreen)
+    {
+        minMaxInfo->ptMaxSize.x = GetSystemMetrics(SM_CXSCREEN);
+        minMaxInfo->ptMaxSize.y = GetSystemMetrics(SM_CYSCREEN);
+        minMaxInfo->ptMaxPosition.x = 0;
+        minMaxInfo->ptMaxPosition.y = 0;
+        minMaxInfo->ptMinTrackSize = minMaxInfo->ptMaxSize;
+        minMaxInfo->ptMaxTrackSize = minMaxInfo->ptMaxSize;
+
+        LeaveCriticalSection(&Console->Lock);
+        return;
+    }
 
     GetScreenBufferSizeUnits(ActiveBuffer, GuiData, &WidthUnit, &HeightUnit);
 

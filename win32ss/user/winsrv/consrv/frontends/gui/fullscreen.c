@@ -103,25 +103,38 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
                          // SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
                          // SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 
-            /* Reposition the window to the upper-left corner */
-            SetWindowPos(GuiData->hWindow, HWND_TOPMOST, 0, 0, 0, 0,
-                         SWP_NOSIZE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+            /*
+             * The window was minimized before switching the display mode.
+             * SetWindowPos alone does not bring a minimized window back, so
+             * restore it first.
+             */
+            ShowWindow(GuiData->hWindow, SW_RESTORE);
+
+            /*
+             * Reposition the window to the upper-left corner and make it
+             * cover the whole screen. In full-screen mode there is no frame
+             * nor caption, hence the window size is exactly the screen size.
+             */
+            SetWindowPos(GuiData->hWindow, HWND_TOPMOST, 0, 0,
+                         GetSystemMetrics(SM_CXSCREEN),
+                         GetSystemMetrics(SM_CYSCREEN),
+                         SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 
             /* Make it the foreground window */
             SetForegroundWindow(GuiData->hWindow);
-
-            /* Resize it */
-            // // GuiConsoleResizeWindow(GuiData);
-            // GuiConsoleResize(GuiData, SIZE_RESTORED, MAKELPARAM(640, 480));
-
-            PostMessageW(GuiData->hWindow, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
-            // SendMessageW(GuiData->hWindow, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
         }
 
-        PostMessageW(GuiData->hWindow, WM_SYSCOMMAND,
-                     GuiData->GuiInfo.FullScreen || GuiData->IsWndMax
-                        ? SC_MAXIMIZE : SC_RESTORE,
-                     0);
+        /*
+         * If the mode switch failed, restore the window to its previous state
+         * (maximized or normal, see IsWndMax). Nothing has to be sent on
+         * success: the window has already been sized to the whole screen.
+         */
+        if (!GuiData->GuiInfo.FullScreen)
+        {
+            PostMessageW(GuiData->hWindow, WM_SYSCOMMAND,
+                         GuiData->IsWndMax ? SC_MAXIMIZE : SC_RESTORE,
+                         0);
+        }
         // ShowWindowAsync(GuiData->hWindow, SW_RESTORE);
     }
     else
