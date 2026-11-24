@@ -22,7 +22,8 @@ void set_native_fpcw(unsigned int value);
 /* Overflow (OE) flag in the x87 status word */
 #define X87_SW_OE 0x0008
 
-/* x87 control word with all exceptions masked, precision control 00b */
+/* x87 control word with all exceptions masked, precision control 10b
+ * (53-bit significand, same as Windows uses) */
 #define X87_CW_MASKED_ALL 0x027F
 /* x87 control word of Delphi / Free Pascal hosts: IM, ZM, OM unmasked */
 #define X87_CW_DELPHI 0x1332
