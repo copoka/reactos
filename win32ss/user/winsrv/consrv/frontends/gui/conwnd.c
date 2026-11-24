@@ -786,19 +786,28 @@ OnActivate(PGUI_CONSOLE_DATA GuiData, WPARAM wParam)
     {
         if (GuiData->GuiInfo.FullScreen)
         {
-            EnterFullScreen(GuiData);
-            // // PostMessageW(GuiData->hWindow, WM_SYSCOMMAND, SC_RESTORE, 0);
-            // SendMessageW(GuiData->hWindow, WM_SYSCOMMAND, SC_RESTORE, 0);
+            /*
+             * Go through SwitchFullScreen so that the window state and the
+             * display mode stay in sync. Re-entering the full-screen mode is
+             * idempotent when the state is already set, whereas calling
+             * EnterFullScreen directly switched the display mode again.
+             */
+            SwitchFullScreen(GuiData, TRUE);
         }
     }
     else // if (ActivationState == WA_INACTIVE)
     {
         if (GuiData->GuiInfo.FullScreen)
         {
-            SendMessageW(GuiData->hWindow, WM_SYSCOMMAND, SC_MINIMIZE, 0);
-            LeaveFullScreen(GuiData);
-            // // PostMessageW(GuiData->hWindow, WM_SYSCOMMAND, SC_MINIMIZE, 0);
-            // SendMessageW(GuiData->hWindow, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+            /*
+             * SwitchFullScreen minimizes the window, restores the display
+             * mode and resets the full-screen state (the flag, the fixed
+             * size, the view size, the window styles and its placement).
+             * Leaving the flag set would enter the full-screen mode again on
+             * the next activation, giving two display mode switches per
+             * Alt+Tab.
+             */
+            SwitchFullScreen(GuiData, FALSE);
         }
     }
 
