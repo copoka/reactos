@@ -17,6 +17,7 @@ extern void func_floor(void);
 extern void func_fpcontrol(void);
 extern void func_fputc(void);
 extern void func_fputwc(void);
+extern void func_infinity(void);
 extern void func_setjmp(void);
 extern void func__snprintf(void);
 extern void func__snwprintf(void);
@@ -63,6 +64,7 @@ const struct test winetest_testlist[] =
     { "ceil", func_ceil },
     { "fabs", func_fabs },
     { "floor", func_floor },
+    { "infinity", func_infinity },
     { "rand_s", func_rand_s },
 #ifdef _M_AMD64 // x86 / arm need fixing
     { "fpcontrol", func_fpcontrol },
