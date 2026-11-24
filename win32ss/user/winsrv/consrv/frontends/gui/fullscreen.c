@@ -51,6 +51,13 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
     PCONSRV_CONSOLE Console = GuiData->Console;
 
     /*
+     * Read the activation state before the window is minimized below: that
+     * sends WM_ACTIVATE(WA_INACTIVE) and OnActivate clears IsWindowActive,
+     * which would make a deliberate Alt+Enter switch look like a deactivation.
+     */
+    BOOL WasActive = GuiData->IsWindowActive;
+
+    /*
      * See:
      * http://stackoverflow.com/questions/2382464/win32-full-screen-and-hiding-taskbar
      * http://stackoverflow.com/questions/3549148/fullscreen-management-with-winapi
@@ -166,16 +173,13 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
 
 
         /*
-         * Bring the window back to the foreground only when it is still
-         * active. When the full-screen mode is left because the window lost
-         * the activation, the focus belongs to the window the user switched
-         * to, and restoring the placement and posting SC_RESTORE would take
-         * it back. In that case the window stays minimized: the display mode,
-         * the styles, the view size and the full-screen flag have already
-         * been restored above, and the window is restored when the user
-         * activates it again.
+         * Restore the window and bring it to the foreground only when it was
+         * still active: leaving the full-screen mode on deactivation must not
+         * take the focus away from the window the user switched to. The window
+         * then stays minimized and the shell restores it with SC_RESTORE when
+         * the user activates the console again.
          */
-        if (GuiData->IsWindowActive)
+        if (WasActive)
         {
             /* Restore the window to its original position */
             SetWindowPlacement(GuiData->hWindow, &GuiData->WndPl);
