@@ -1066,6 +1066,8 @@ OnPaint(PGUI_CONSOLE_DATA GuiData)
     PCONSOLE_SCREEN_BUFFER ActiveBuffer = GuiData->ActiveBuffer;
     PAINTSTRUCT ps;
     RECT rcPaint;
+    WORD BkgdAttrib;
+    HBRUSH BkgdBrush;
 
     /* Do nothing if the window is hidden */
     if (!GuiData->IsWindowVisible) return;
@@ -1076,6 +1078,29 @@ OnPaint(PGUI_CONSOLE_DATA GuiData)
         ps.rcPaint.top < ps.rcPaint.bottom)
     {
         EnterCriticalSection(&GuiData->Lock);
+
+        /*
+         * The frame buffer bitmap covers exactly the screen buffer size, so
+         * the rest of the invalidated client area (the letterbox area of a
+         * full-screen console, and the free space around a smaller view in
+         * windowed mode) is not painted by any of the drawing routines below,
+         * and WM_ERASEBKGND does not erase it either. Fill the whole
+         * invalidated region with the console background colour; the text,
+         * caret and selection are drawn afterwards and overwrite what belongs
+         * to them. Graphics buffers have their own drawing code and are left
+         * untouched.
+         */
+        if (GetType(ActiveBuffer) == TEXTMODE_BUFFER)
+        {
+            BkgdAttrib = ((PTEXTMODE_SCREEN_BUFFER)ActiveBuffer)->ScreenDefaultAttrib;
+            BkgdBrush  = CreateSolidBrush(RGBFromAttrib(GuiData->Console,
+                                                        BkgdAttribFromAttrib(BkgdAttrib)));
+            if (BkgdBrush != NULL)
+            {
+                FillRect(ps.hdc, &ps.rcPaint, BkgdBrush);
+                DeleteObject(BkgdBrush);
+            }
+        }
 
         /* Compose the current screen-buffer on-memory */
         if (GetType(ActiveBuffer) == TEXTMODE_BUFFER)
