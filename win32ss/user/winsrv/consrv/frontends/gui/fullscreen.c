@@ -165,16 +165,29 @@ SwitchFullScreen(PGUI_CONSOLE_DATA GuiData, BOOL FullScreen)
                      SWP_FRAMECHANGED /*| SWP_SHOWWINDOW*/);
 
 
-        /* Restore the window to its original position */
-        SetWindowPlacement(GuiData->hWindow, &GuiData->WndPl);
+        /*
+         * Bring the window back to the foreground only when it is still
+         * active. When the full-screen mode is left because the window lost
+         * the activation, the focus belongs to the window the user switched
+         * to, and restoring the placement and posting SC_RESTORE would take
+         * it back. In that case the window stays minimized: the display mode,
+         * the styles, the view size and the full-screen flag have already
+         * been restored above, and the window is restored when the user
+         * activates it again.
+         */
+        if (GuiData->IsWindowActive)
+        {
+            /* Restore the window to its original position */
+            SetWindowPlacement(GuiData->hWindow, &GuiData->WndPl);
 
-        PostMessageW(GuiData->hWindow, WM_SYSCOMMAND,
-                     GuiData->IsWndMax ? SC_MAXIMIZE : SC_RESTORE,
-                     0);
-        // ShowWindowAsync(GuiData->hWindow, SW_RESTORE);
+            PostMessageW(GuiData->hWindow, WM_SYSCOMMAND,
+                         GuiData->IsWndMax ? SC_MAXIMIZE : SC_RESTORE,
+                         0);
+            // ShowWindowAsync(GuiData->hWindow, SW_RESTORE);
 
-        /* Make it the foreground window */
-        SetForegroundWindow(GuiData->hWindow);
+            /* Make it the foreground window */
+            SetForegroundWindow(GuiData->hWindow);
+        }
 
         /* Resize it */
         // GuiConsoleResizeWindow(GuiData);
