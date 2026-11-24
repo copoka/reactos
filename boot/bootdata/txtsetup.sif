@@ -197,9 +197,12 @@ isapnp = isapnp.sys
 
 [InputDevicesSupport.Load]
 usbehci = usbehci.sys
+usbxhci = usbxhci.sys
+ucx01000 = ucx01000.sys
 usbohci = usbohci.sys
 usbuhci = usbuhci.sys
 usbhub = usbhub.sys
+usbhub3 = usbhub3.sys
 usbccgp = usbccgp.sys
 hidusb = hidusb.sys
 usbstor = usbstor.sys
