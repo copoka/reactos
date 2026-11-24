@@ -53,7 +53,13 @@ typedef double double_t;
 #ifndef _HUGE_ENUF
 #define _HUGE_ENUF 1e+300
 #endif
+// INFINITY must be a constant: _HUGE_ENUF * _HUGE_ENUF overflows, which
+// raises #O when the x87 overflow exception is unmasked (CORE-20862)
+#ifdef _MSC_VER
 #define INFINITY  ((float)(_HUGE_ENUF * _HUGE_ENUF))
+#else
+#define INFINITY  (__builtin_inff())
+#endif
 #define HUGE_VALD ((double)INFINITY)
 #define HUGE_VALF ((float)INFINITY)
 #define HUGE_VALL ((long double)INFINITY)
