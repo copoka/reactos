@@ -85,7 +85,15 @@ _CRT_BEGIN_C_HEADER
     #define _HUGE_ENUF  1e+300  // _HUGE_ENUF*_HUGE_ENUF must overflow
 #endif
 
+// INFINITY must be a constant: the MSVC definition still computes
+// _HUGE_ENUF * _HUGE_ENUF, which overflows, and with an unmasked x87 overflow
+// exception that becomes #O (CORE-20862). GCC and Clang get a compiler
+// builtin instead.
+#ifdef _MSC_VER
 #define INFINITY   ((float)(_HUGE_ENUF * _HUGE_ENUF))
+#else
+#define INFINITY   (__builtin_inff())
+#endif
 #define HUGE_VAL   ((double)INFINITY)
 #define HUGE_VALF  ((float)INFINITY)
 #define HUGE_VALL  ((long double)INFINITY)

@@ -39,6 +39,7 @@ list(APPEND SOURCE_CRT_TESTS
     ../crt/exp.c
     ../crt/fabs.c
     ../crt/floor.c
+    ../crt/infinity.c
     ../crt/log.c
     ../crt/log10.c
     ../crt/mbstowcs.c
@@ -91,10 +92,12 @@ list(APPEND SOURCE
 
 add_executable(msvcrt_apitest ${SOURCE})
 add_dependencies(msvcrt_apitest asm)
+# <msxml2.h> is generated from sdk/include/psdk/msxml2.idl by the psdk target
+add_dependencies(msvcrt_apitest psdk)
 target_compile_definitions(msvcrt_apitest PRIVATE TEST_MSVCRT TEST_DLL_NAME="msvcrt.dll")
 target_link_libraries(msvcrt_apitest wine ${PSEH_LIB})
 set_module_type(msvcrt_apitest win32cui)
-add_importlibs(msvcrt_apitest msvcrt kernel32 ntdll)
+add_importlibs(msvcrt_apitest msvcrt kernel32 ntdll ole32)
 add_rostests_file(TARGET msvcrt_apitest)
 
 # Helper DLL for testing CRT startup

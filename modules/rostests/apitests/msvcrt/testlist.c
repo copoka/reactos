@@ -34,6 +34,7 @@ extern void func_exp(void);
 extern void func_fabs(void);
 extern void func_floor(void);
 extern void func_fpcontrol(void);
+extern void func_infinity(void);
 extern void func_log(void);
 extern void func_log10(void);
 extern void func_mbstowcs(void);
@@ -99,6 +100,7 @@ const struct test winetest_testlist[] =
     { "exp", func_exp },
     { "fabs", func_fabs },
     { "floor", func_floor },
+    { "infinity", func_infinity },
     { "log", func_log },
     { "log10", func_log10 },
     { "mbstowcs", func_mbstowcs },
