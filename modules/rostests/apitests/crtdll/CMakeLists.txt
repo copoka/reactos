@@ -19,6 +19,7 @@ list(APPEND SOURCE_CRTDLL
     ../crt/wcstombs.c
     ../crt/wcstoul.c
     ../crt/wctomb.c
+    data_exports.c
 )
 
 if(ARCH STREQUAL "i386")
