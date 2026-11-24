@@ -96,7 +96,7 @@ START_TEST(infinity)
         return;
 
     hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    ok(hr == S_OK, "CoInitializeEx failed, hr = 0x%08lx\n", hr);
+    ok(SUCCEEDED(hr), "CoInitializeEx failed, hr = 0x%08lx\n", hr);
     if (SUCCEEDED(hr))
     {
         unknown = NULL;
